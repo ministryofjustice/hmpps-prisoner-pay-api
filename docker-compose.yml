@@ -1,33 +1,17 @@
 version: "3"
 services:
-  hmpps-prisoner-pay-api:
-    build:
-      context: .
+  db:
+    image: postgres:latest
     networks:
       - hmpps
-    container_name: hmpps-prisoner-pay-api
+    container_name: prisoner-pay-api-db
+    restart: always
     ports:
-      - "8080:8080"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ping"]
+      - "15432:5432"
     environment:
-      - SERVER_PORT=8080
-      - HMPPS_AUTH_URL=http://hmpps-auth:8080/auth
-      - SPRING_PROFILES_ACTIVE=dev
-
-  hmpps-auth:
-    image: quay.io/hmpps/hmpps-auth:latest
-    networks:
-      - hmpps
-    container_name: hmpps-auth
-    ports:
-      - "8090:8080"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/auth/health"]
-    environment:
-      - SERVER_PORT=8080
-      - SPRING_PROFILES_ACTIVE=dev
-      - APPLICATION_AUTHENTICATION_UI_ALLOWLIST=0.0.0.0/0
+      POSTGRES_DB: prisoner-pay-api-db
+      POSTGRES_USER: prisoner-pay-api
+      POSTGRES_PASSWORD: prisoner-pay-api
 
 networks:
   hmpps:

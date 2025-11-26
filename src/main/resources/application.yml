@@ -15,7 +15,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: ${hmpps-auth.url}/.well-known/jwks.json
+          jwk-set-uri: ${api.base.url.hmpps-auth}/.well-known/jwks.json
 
       client:
         provider:
@@ -24,6 +24,11 @@ spring:
   http:
     codecs:
       max-in-memory-size: 10MB
+
+  datasource:
+    url: 'jdbc:postgresql://${DB_SERVER}/${DB_NAME}?sslmode=${DB_SSL_MODE}'
+    username: ${DB_USER}
+    password: ${DB_PASS}
 
 server:
   port: 8080
