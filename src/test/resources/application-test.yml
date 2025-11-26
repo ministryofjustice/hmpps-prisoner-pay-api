@@ -5,5 +5,7 @@ management.endpoint:
   health.cache.time-to-live: 0
   info.cache.time-to-live: 0
 
-hmpps-auth:
-  url: "http://localhost:8090/auth"
+api:
+  base:
+    url:
+      hmpps-auth: http://localhost:8090/auth
