@@ -1,10 +1,10 @@
 info.app:
-  name: HMPPS Template Kotlin
+  name: HMPPS Prisoner Pay Api
   version: 1.0
 
 spring:
   application:
-    name: hmpps-template-kotlin
+    name: hmpps-prisoner-pay-api
 
   jackson:
     date-format: "yyyy-MM-dd HH:mm:ss"
