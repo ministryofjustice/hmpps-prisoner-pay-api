@@ -57,6 +57,7 @@ jobs:
       docker_multiplatform: false
   deploy_dev:
     name: Deploy to the development environment
+    if: github.ref == 'refs/heads/main'
     needs:
       - build
       - helm_lint
