@@ -1,0 +1,13 @@
+spring:
+  jpa:
+    show-sql: true
+
+  datasource:
+    url: 'jdbc:postgresql://localhost:15432/prisoner-pay-api-db?sslmode=prefer'
+    username: prisoner-pay-api
+    password: prisoner-pay-api-db
+
+api:
+  base:
+    url:
+      hmpps-auth: https://sign-in-dev.hmpps.service.justice.gov.uk/auth
