@@ -41,8 +41,16 @@ jobs:
       environment: ${{ matrix.environments }}
   kotlin_validate:
     name: Validate the kotlin
-    uses: ministryofjustice/hmpps-github-actions/.github/workflows/gradle_verify.yml@v2 # WORKFLOW_VERSION
+    uses: ministryofjustice/hmpps-github-actions/.github/workflows/gradle_postgres_verify.yml@postgres-port # WORKFLOW_VERSION
     secrets: inherit
+    with:
+      java-version: "25"
+      postgres-tag: "18"
+      postgres-db: prisoner-pay
+      postgres-username: prisoner-pay
+      postgres-password: prisoner-pay
+      postgres-port-mapping: "15444:5432"
+
   build:
     name: Build docker image from hmpps-github-actions
     if: github.ref == 'refs/heads/main'

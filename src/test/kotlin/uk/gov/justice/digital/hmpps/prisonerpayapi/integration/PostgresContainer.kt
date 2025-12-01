@@ -1,0 +1,38 @@
+package uk.gov.justice.digital.hmpps.prisonerpayapi.integration
+
+import org.slf4j.LoggerFactory
+import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.containers.wait.strategy.Wait
+import java.io.IOException
+import java.net.ServerSocket
+
+object PostgresContainer {
+  val instance: PostgreSQLContainer<Nothing>? by lazy { startPostgresqlContainer() }
+
+  private fun startPostgresqlContainer(): PostgreSQLContainer<Nothing>? {
+    if (isPostgresRunning()) {
+      log.warn("Using existing Postgres database")
+      return null
+    }
+    log.info("Creating a Postgres database")
+    return PostgreSQLContainer<Nothing>("postgres:18").apply {
+      withEnv("HOSTNAME_EXTERNAL", "localhost")
+      withDatabaseName("activities")
+      withUsername("activities")
+      withPassword("activities")
+      setWaitStrategy(Wait.forListeningPort())
+      withReuse(true)
+
+      start()
+    }
+  }
+
+  private fun isPostgresRunning(): Boolean = try {
+    val serverSocket = ServerSocket(15444)
+    serverSocket.localPort == 0
+  } catch (e: IOException) {
+    true
+  }
+
+  private val log = LoggerFactory.getLogger(this::class.java)
+}

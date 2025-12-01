@@ -1,7 +1,8 @@
 version: "3"
+
 services:
   db:
-    image: postgres:latest
+    image: postgres:18
     networks:
       - hmpps
     container_name: prisoner-pay-api-db

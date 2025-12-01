@@ -6,6 +6,8 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT
 import org.springframework.http.HttpHeaders
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
 import uk.gov.justice.digital.hmpps.prisonerpayapi.integration.wiremock.HmppsAuthApiExtension
 import uk.gov.justice.digital.hmpps.prisonerpayapi.integration.wiremock.HmppsAuthApiExtension.Companion.hmppsAuth
@@ -21,6 +23,20 @@ abstract class IntegrationTestBase {
 
   @Autowired
   protected lateinit var jwtAuthHelper: JwtAuthorisationHelper
+
+  companion object {
+    internal val db = PostgresContainer.instance
+
+    @JvmStatic
+    @DynamicPropertySource
+    fun properties(registry: DynamicPropertyRegistry) {
+      db?.run {
+        registry.add("spring.datasource.url", db::getJdbcUrl)
+        registry.add("spring.datasource.username", db::getUsername)
+        registry.add("spring.datasource.password", db::getPassword)
+      }
+    }
+  }
 
   internal fun setAuthorisation(
     username: String? = "AUTH_ADM",
