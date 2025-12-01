@@ -49,7 +49,7 @@ jobs:
       postgres-db: prisoner-pay
       postgres-username: prisoner-pay
       postgres-password: prisoner-pay
-      postgres-port-mapping: "15444:5432"
+      postgres-port: "15444:5432"
 
   build:
     name: Build docker image from hmpps-github-actions
