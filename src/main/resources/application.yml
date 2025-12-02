@@ -30,6 +30,10 @@ spring:
     username: ${DB_USER}
     password: ${DB_PASS}
 
+  flyway:
+    enabled: true
+    locations: classpath:db/migrations/common
+
 server:
   port: 8080
   servlet:

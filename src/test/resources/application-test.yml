@@ -5,6 +5,16 @@ management.endpoint:
   health.cache.time-to-live: 0
   info.cache.time-to-live: 0
 
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:15444/prisoner-pay
+    username: prisoner-pay
+    password: prisoner-pay
+    hikari:
+      minimumIdle: 2
+      maximumPoolSize: 8
+      idleTimeout: 1000
+
 api:
   base:
     url:
