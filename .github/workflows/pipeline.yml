@@ -41,7 +41,7 @@ jobs:
       environment: ${{ matrix.environments }}
   kotlin_validate:
     name: Validate the kotlin
-    uses: ministryofjustice/hmpps-github-actions/.github/workflows/gradle_postgres_verify.yml@postgres-port # WORKFLOW_VERSION
+    uses: ministryofjustice/hmpps-github-actions/.github/workflows/gradle_postgres_verify.yml@v2 # WORKFLOW_VERSION
     secrets: inherit
     with:
       java-version: "25"
