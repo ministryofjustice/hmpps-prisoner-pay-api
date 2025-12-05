@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -13,11 +14,12 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.integration.wiremock.HmppsAut
 import uk.gov.justice.digital.hmpps.prisonerpayapi.integration.wiremock.HmppsAuthApiExtension.Companion.hmppsAuth
 import uk.gov.justice.hmpps.test.kotlin.auth.JwtAuthorisationHelper
 
+internal const val USERNAME = "TestUser"
+
 @ExtendWith(HmppsAuthApiExtension::class)
 @SpringBootTest(webEnvironment = RANDOM_PORT)
 @ActiveProfiles("test")
 abstract class IntegrationTestBase {
-
   @Autowired
   protected lateinit var webTestClient: WebTestClient
 
@@ -39,12 +41,31 @@ abstract class IntegrationTestBase {
   }
 
   internal fun setAuthorisation(
-    username: String? = "AUTH_ADM",
+    username: String? = USERNAME,
     roles: List<String> = listOf(),
-    scopes: List<String> = listOf("read"),
-  ): (HttpHeaders) -> Unit = jwtAuthHelper.setAuthorisationHeader(username = username, scope = scopes, roles = roles)
+    scopes: List<String> = listOf(),
+  ): (HttpHeaders) -> Unit = jwtAuthHelper.setAuthorisationHeader(
+    clientId = "hmpps-prisoner-pay-api",
+    roles = roles,
+    username = username,
+    scope = scopes,
+  )
+
+  internal fun noAuthorisation(
+    username: String? = USERNAME,
+    roles: List<String> = listOf(),
+    scopes: List<String> = listOf(),
+  ): (HttpHeaders) -> Unit = {
+    println("No auth header set")
+  }
 
   protected fun stubPingWithResponse(status: Int) {
     hmppsAuth.stubHealthPing(status)
   }
+
+  internal final inline fun <reified T> WebTestClient.ResponseSpec.success(status: HttpStatus = HttpStatus.OK): T = expectStatus().isEqualTo(status)
+    .expectBody(T::class.java)
+    .returnResult().responseBody!!
+
+  internal final fun WebTestClient.ResponseSpec.fail(status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR) = expectStatus().isEqualTo(status)
 }

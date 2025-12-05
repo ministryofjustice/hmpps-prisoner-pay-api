@@ -6,6 +6,9 @@ management.endpoint:
   info.cache.time-to-live: 0
 
 spring:
+  main:
+    allow-bean-definition-overriding: true
+
   datasource:
     url: jdbc:postgresql://localhost:15444/prisoner-pay
     username: prisoner-pay
@@ -15,7 +18,17 @@ spring:
       maximumPoolSize: 8
       idleTimeout: 1000
 
+#  security:
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#          public-key-location: classpath:local-public-key.pub
+
 api:
   base:
     url:
       hmpps-auth: http://localhost:8090/auth
+
+#hmpps:
+#  test:
+#    jwt-helper-enabled: false
