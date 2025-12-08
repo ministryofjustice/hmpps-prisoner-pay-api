@@ -1,0 +1,72 @@
+package uk.gov.justice.digital.hmpps.prisonerpayapi.service
+
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+import org.mockito.Mockito.mock
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
+import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.CreatePayStatusPeriodRequest
+import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusPeriod
+import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
+import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPeriodRepository
+import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toModel
+import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
+import java.time.Clock
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.util.*
+
+class PayStatusPeriodServiceTest {
+  val authenticationHolder: HmppsAuthenticationHolder = mock()
+  val repository: PayStatusPeriodRepository = mock()
+  val clock: Clock = Clock.fixed(Instant.parse("2025-07-23T12:34:56Z"), ZoneId.of("Europe/London"))
+
+  val payStatusPeriodService = PayStatusPeriodService(authenticationHolder, repository, clock)
+
+  val captor = argumentCaptor<PayStatusPeriod>()
+
+  @Test
+  fun `should save pay status period`() {
+    val request = CreatePayStatusPeriodRequest(
+      prisonerNumber = "A1234AA",
+      type = PayStatusType.LONG_TERM_SICK,
+      startDate = LocalDate.now(),
+      endDate = LocalDate.now().plusDays(10),
+    )
+
+    whenever(authenticationHolder.username).thenReturn("BLOGGSJ")
+
+    val newEntity = PayStatusPeriod(
+      prisonerNumber = request.prisonerNumber,
+      type = request.type,
+      startDate = request.startDate,
+      endDate = request.endDate,
+      createdBy = "BLOGGSJ",
+      createdDateTime = LocalDateTime.now(clock),
+    )
+
+    val savedEntity = PayStatusPeriod(
+      id = UUID.randomUUID(),
+      prisonerNumber = newEntity.prisonerNumber,
+      type = newEntity.type,
+      startDate = newEntity.startDate,
+      endDate = newEntity.endDate,
+      createdBy = newEntity.createdBy,
+      createdDateTime = newEntity.createdDateTime,
+    )
+
+    whenever(repository.save(any())).thenReturn(savedEntity)
+
+    val result = payStatusPeriodService.create(request)
+
+    assertThat(result).isEqualTo(savedEntity.toModel())
+
+    verify(repository).save(captor.capture())
+
+    assertThat(captor.firstValue).usingRecursiveComparison().isEqualTo(newEntity)
+  }
+}
