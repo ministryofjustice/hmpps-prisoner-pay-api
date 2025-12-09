@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.web.reactive.server.WebTestClient
 import uk.gov.justice.digital.hmpps.prisonerpayapi.integration.wiremock.HmppsAuthApiExtension
 import uk.gov.justice.digital.hmpps.prisonerpayapi.integration.wiremock.HmppsAuthApiExtension.Companion.hmppsAuth
@@ -19,6 +20,7 @@ internal const val USERNAME = "TestUser"
 @ExtendWith(HmppsAuthApiExtension::class)
 @SpringBootTest(webEnvironment = RANDOM_PORT)
 @ActiveProfiles("test")
+@Sql("classpath:sql/tear-down-all-data.sql")
 abstract class IntegrationTestBase {
   @Autowired
   protected lateinit var webTestClient: WebTestClient
@@ -65,6 +67,10 @@ abstract class IntegrationTestBase {
 
   internal final inline fun <reified T> WebTestClient.ResponseSpec.success(status: HttpStatus = HttpStatus.OK): T = expectStatus().isEqualTo(status)
     .expectBody(T::class.java)
+    .returnResult().responseBody!!
+
+  internal final inline fun <reified T> WebTestClient.ResponseSpec.successList(status: HttpStatus = HttpStatus.OK): List<T> = expectStatus().isEqualTo(status)
+    .expectBodyList(T::class.java)
     .returnResult().responseBody!!
 
   internal final fun WebTestClient.ResponseSpec.fail(status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR) = expectStatus().isEqualTo(status)

@@ -1,9 +1,21 @@
 package uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository
 
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusPeriod
-import java.util.UUID
+import java.time.LocalDate
+import java.util.*
 
 @Repository
-interface PayStatusPeriodRepository : JpaRepository<PayStatusPeriod, UUID>
+interface PayStatusPeriodRepository : JpaRepository<PayStatusPeriod, UUID> {
+  @Query(
+    """
+    select psp from PayStatusPeriod psp 
+    where psp.startDate <= :latestStartDate
+    and (:activeOnly = false or psp.endDate is null or psp.endDate >= current_date())
+    order by psp.startDate
+  """,
+  )
+  fun search(latestStartDate: LocalDate, activeOnly: Boolean): List<PayStatusPeriod>
+}

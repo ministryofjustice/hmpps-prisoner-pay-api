@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerpayapi.service
 
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
@@ -29,6 +30,11 @@ class PayStatusPeriodServiceTest {
 
   val captor = argumentCaptor<PayStatusPeriod>()
 
+  @BeforeEach
+  fun setUp() {
+    whenever(authenticationHolder.username).thenReturn("BLOGGSJ")
+  }
+
   @Test
   fun `should save pay status period`() {
     val request = CreatePayStatusPeriodRequest(
@@ -37,8 +43,6 @@ class PayStatusPeriodServiceTest {
       startDate = LocalDate.now(),
       endDate = LocalDate.now().plusDays(10),
     )
-
-    whenever(authenticationHolder.username).thenReturn("BLOGGSJ")
 
     val newEntity = PayStatusPeriod(
       prisonerNumber = request.prisonerNumber,
@@ -68,5 +72,36 @@ class PayStatusPeriodServiceTest {
     verify(repository).save(captor.capture())
 
     assertThat(captor.firstValue).usingRecursiveComparison().isEqualTo(newEntity)
+  }
+
+  @Test
+  fun `should retrieve pay status periods`() {
+    val expectedEntities = listOf(
+      PayStatusPeriod(
+        id = UUID.randomUUID(),
+        prisonerNumber = "A1111AA",
+        type = PayStatusType.LONG_TERM_SICK,
+        startDate = LocalDate.of(2025, 7, 23),
+        endDate = LocalDate.of(2025, 11, 1),
+        createdBy = "BLOGGSJ",
+        createdDateTime = LocalDateTime.now(clock),
+      ),
+      PayStatusPeriod(
+        id = UUID.randomUUID(),
+        prisonerNumber = "B2222BB",
+        type = PayStatusType.LONG_TERM_SICK,
+        startDate = LocalDate.of(2025, 4, 13),
+        createdBy = "SMITHK",
+        createdDateTime = LocalDateTime.now(clock),
+      ),
+    )
+
+    whenever(repository.search(any(), any())).thenReturn(expectedEntities)
+
+    val results = payStatusPeriodService.search(LocalDate.of(2025, 7, 23), true)
+
+    verify(repository).search(LocalDate.of(2025, 7, 23), true)
+
+    assertThat(results).usingRecursiveComparison().isEqualTo(expectedEntities.map { it.toModel() })
   }
 }

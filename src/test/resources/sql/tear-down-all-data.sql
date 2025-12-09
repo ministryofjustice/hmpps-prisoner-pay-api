@@ -1,0 +1,1 @@
+delete from pay_status_period;

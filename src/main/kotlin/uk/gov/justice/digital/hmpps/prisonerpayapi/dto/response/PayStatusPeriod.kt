@@ -22,7 +22,7 @@ data class PayStatusPeriod(
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "The start date", example = "2025-07-23")
   val startDate: LocalDate,
 
-  @Schema(description = "The end date", example = "2025-07-23")
+  @Schema(description = "The end date", example = "2025-09-14")
   val endDate: LocalDate?,
 
   @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "The user who created the pay status period ", example = "USER1")

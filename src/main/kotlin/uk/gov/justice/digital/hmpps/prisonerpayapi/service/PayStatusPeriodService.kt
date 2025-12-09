@@ -9,6 +9,7 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toEntity
 import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toModel
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.Clock
+import java.time.LocalDate
 
 @Service
 @Transactional(readOnly = true)
@@ -25,4 +26,8 @@ class PayStatusPeriodService(
       repository.save(entity)
     }
     .toModel()
+
+  fun search(latestStartDate: LocalDate, activeOnly: Boolean) = repository
+    .search(latestStartDate, activeOnly)
+    .map { it.toModel() }
 }
