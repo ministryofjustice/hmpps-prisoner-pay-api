@@ -12,7 +12,7 @@ generic-service:
   ingress:
     enabled: true
     host: app-hostname.local # override per environment
-    tlsSecretName: hmpps-prisoner-pay-api-cert
+    tlsSecretName: prisoner-pay-api-cert
 
   # Environment variables to load into the deployment
   env:
