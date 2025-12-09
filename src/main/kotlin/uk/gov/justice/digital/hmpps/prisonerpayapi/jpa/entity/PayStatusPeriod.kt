@@ -23,7 +23,7 @@ class PayStatusPeriod(
 
   val startDate: LocalDate,
 
-  val endDate: LocalDate?,
+  val endDate: LocalDate? = null,
 
   val createdDateTime: LocalDateTime,
 
