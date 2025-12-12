@@ -16,16 +16,27 @@ class PayStatusPeriod(
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   val id: UUID? = null,
 
-  val prisonerNumber: String,
+  var prisonerNumber: String,
 
   @Enumerated(EnumType.STRING)
   val type: PayStatusType,
 
   val startDate: LocalDate,
 
-  val endDate: LocalDate? = null,
+  endDate: LocalDate? = null,
 
   val createdDateTime: LocalDateTime,
 
   val createdBy: String,
-)
+) {
+  var endDate: LocalDate? = endDate
+    set(value) {
+      require(value == null || value >= startDate) { "endDate cannot be before startDate" }
+
+      field = value
+    }
+
+  init {
+    this.endDate = endDate
+  }
+}

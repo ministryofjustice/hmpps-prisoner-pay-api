@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerpayapi.config
 
+import jakarta.persistence.EntityNotFoundException
 import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus.BAD_REQUEST
@@ -15,8 +16,8 @@ import uk.gov.justice.hmpps.kotlin.common.ErrorResponse
 
 @RestControllerAdvice
 class PrisonerPayApiExceptionHandler {
-  @ExceptionHandler(ValidationException::class)
-  fun handleValidationException(e: ValidationException): ResponseEntity<ErrorResponse> = ResponseEntity
+  @ExceptionHandler(ValidationException::class, IllegalArgumentException::class)
+  fun handleValidationException(e: Exception): ResponseEntity<ErrorResponse> = ResponseEntity
     .status(BAD_REQUEST)
     .body(
       ErrorResponse(
@@ -36,6 +37,17 @@ class PrisonerPayApiExceptionHandler {
         developerMessage = e.message,
       ),
     ).also { log.info("No resource found exception: {}", e.message) }
+
+  @ExceptionHandler(EntityNotFoundException::class)
+  fun handleEntityNotFoundException(e: EntityNotFoundException): ResponseEntity<ErrorResponse> = ResponseEntity
+    .status(NOT_FOUND)
+    .body(
+      ErrorResponse(
+        status = NOT_FOUND,
+        userMessage = "Entity not found : ${e.message}",
+        developerMessage = e.message,
+      ),
+    ).also { log.info("Entity not found exception: {}", e.message) }
 
   @ExceptionHandler(AccessDeniedException::class)
   fun handleAccessDeniedException(e: AccessDeniedException): ResponseEntity<ErrorResponse> = ResponseEntity

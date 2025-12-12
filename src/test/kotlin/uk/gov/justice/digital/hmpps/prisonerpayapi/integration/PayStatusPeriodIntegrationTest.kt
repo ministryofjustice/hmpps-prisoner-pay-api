@@ -4,20 +4,59 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.tuple
 import org.assertj.core.api.Assertions.within
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.CreatePayStatusPeriodRequest
+import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.UpdatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.response.PayStatusPeriod
+import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.createPayStatusRequest
+import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.today
+import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.updatePayStatusRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
+import java.util.*
 
 class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
   @Nested
+  @DisplayName("Create a new Pay Status Period")
   inner class CreatePayStatusPeriod {
+
+    @Nested
+    @DisplayName("Retrieve a Pay Status Period")
+    inner class RetrievePayStatusPeriod {
+
+      @Test
+      fun `should retrieve the pay status period`() {
+        createPayStatusPeriod(createPayStatusRequest()).success<PayStatusPeriod>()
+          .let { originalPayStatusPeriod ->
+            with(getPayStatusPeriod(originalPayStatusPeriod.id).success<PayStatusPeriod>()) {
+              assertThat(id).isEqualTo(originalPayStatusPeriod.id)
+              assertThat(type).isEqualTo(originalPayStatusPeriod.type)
+              assertThat(prisonerNumber).isEqualTo(originalPayStatusPeriod.prisonerNumber)
+              assertThat(startDate).isEqualTo(originalPayStatusPeriod.startDate)
+              assertThat(endDate).isEqualTo(originalPayStatusPeriod.endDate)
+              assertThat(createdBy).isEqualTo(USERNAME)
+              assertThat(createdDateTime).isCloseTo(LocalDateTime.now(), within(1, ChronoUnit.SECONDS))
+            }
+          }
+      }
+
+      @Test
+      fun `should return not found if id does not exist`() {
+        getPayStatusPeriod(UUID.randomUUID()).fail(HttpStatus.NOT_FOUND)
+      }
+
+      @Test
+      fun `returns unauthorized when no bearer token`() {
+        getPayStatusPeriod(UUID.randomUUID(), includeBearerAuth = false).fail(HttpStatus.UNAUTHORIZED)
+      }
+    }
+
     @Test
     fun `can create a new pay status period with an end date`() {
       val request = CreatePayStatusPeriodRequest(
@@ -62,7 +101,16 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `returns forbidden when no bearer token`() {
+    fun `should return bad request start date is after end date`() {
+      with(createPayStatusPeriod(createPayStatusRequest(endDate = today().minusDays(1))).badRequest()) {
+        assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+        assertThat(userMessage).isEqualTo("Validation failure: endDate cannot be before startDate")
+        assertThat(developerMessage).isEqualTo("endDate cannot be before startDate")
+      }
+    }
+
+    @Test
+    fun `returns unauthorized when no bearer token`() {
       val request = CreatePayStatusPeriodRequest(
         prisonerNumber = "A1234AA",
         type = PayStatusType.LONG_TERM_SICK,
@@ -75,6 +123,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
+  @DisplayName("Search for Pay Status Periods")
   inner class SearchPayStatusPeriods {
     val request1 = CreatePayStatusPeriodRequest(
       prisonerNumber = "A1111AA",
@@ -162,17 +211,70 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `returns forbidden when no bearer token`() {
-      CreatePayStatusPeriodRequest(
-        prisonerNumber = "A1234AA",
-        type = PayStatusType.LONG_TERM_SICK,
-        startDate = LocalDate.now(),
-        endDate = LocalDate.now().plusDays(10),
-      )
-
+    fun `returns unauthorized when no bearer token`() {
       searchPayStatusPeriods(LocalDate.now(), includeBearerAuth = false).fail(HttpStatus.UNAUTHORIZED)
     }
   }
+
+  @Nested
+  @DisplayName("Update a Pay Status Period")
+  inner class UpdatePayStatusPeriod {
+
+    @Test
+    fun `should update end date of the pay status period`() {
+      val twoMonths = today().plusMonths(2)
+      val sixMonths = twoMonths.plusMonths(4)
+
+      with(createPayStatusPeriod(createPayStatusRequest(endDate = twoMonths)).success<PayStatusPeriod>()) {
+        assertThat(endDate).isEqualTo(twoMonths)
+
+        updatePayStatusPeriod(id, updatePayStatusRequest(endDate = sixMonths)).success<PayStatusPeriod>()
+          .let { assertThat(it.endDate).isEqualTo(sixMonths) }
+
+        getPayStatusPeriod(id).success<PayStatusPeriod>()
+          .let { assertThat(it.endDate).isEqualTo(sixMonths) }
+      }
+    }
+
+    @Test
+    fun `should remove the end date of the pay status period`() {
+      with(createPayStatusPeriod(createPayStatusRequest()).success<PayStatusPeriod>()) {
+        updatePayStatusPeriod(id, updatePayStatusRequest(endDate = null, removeEndDate = true)).success<PayStatusPeriod>()
+          .let { assertThat(it.endDate).isNull() }
+      }
+    }
+
+    @Test
+    fun `should return not found if id does not exist`() {
+      updatePayStatusPeriod(UUID.randomUUID(), updatePayStatusRequest()).fail(HttpStatus.NOT_FOUND)
+    }
+
+    @Test
+    fun `should return bad request if endDate and removeEndDate are supplied`() {
+      with(updatePayStatusPeriod(UUID.randomUUID(), updatePayStatusRequest(removeEndDate = true)).badRequest()) {
+        assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+        assertThat(userMessage).isEqualTo("Validation failure: removeEndDate cannot be true when an endDate is also supplied")
+        assertThat(developerMessage).isEqualTo("removeEndDate cannot be true when an endDate is also supplied")
+      }
+    }
+
+    @Test
+    fun `returns unauthorized when no bearer token`() {
+      updatePayStatusPeriod(UUID.randomUUID(), updatePayStatusRequest(), includeBearerAuth = false).fail(HttpStatus.UNAUTHORIZED)
+    }
+  }
+
+  private fun getPayStatusPeriod(
+    id: UUID,
+    username: String = USERNAME,
+    roles: List<String> = listOf(),
+    includeBearerAuth: Boolean = true,
+  ) = webTestClient
+    .get()
+    .uri("/pay-status-periods/$id")
+    .accept(MediaType.APPLICATION_JSON)
+    .headers(if (includeBearerAuth) setAuthorisation() else noAuthorisation())
+    .exchange()
 
   private fun createPayStatusPeriod(
     request: CreatePayStatusPeriodRequest,
@@ -202,6 +304,20 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
         .queryParam("activeOnly", activeOnly)
         .build()
     }
+    .accept(MediaType.APPLICATION_JSON)
+    .headers(if (includeBearerAuth) setAuthorisation() else noAuthorisation())
+    .exchange()
+
+  private fun updatePayStatusPeriod(
+    id: UUID,
+    request: UpdatePayStatusPeriodRequest,
+    username: String = USERNAME,
+    roles: List<String> = listOf(),
+    includeBearerAuth: Boolean = true,
+  ) = webTestClient
+    .patch()
+    .uri("/pay-status-periods/$id")
+    .bodyValue(request)
     .accept(MediaType.APPLICATION_JSON)
     .headers(if (includeBearerAuth) setAuthorisation() else noAuthorisation())
     .exchange()

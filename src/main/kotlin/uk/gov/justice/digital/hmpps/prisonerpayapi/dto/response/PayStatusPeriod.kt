@@ -10,24 +10,24 @@ import java.util.UUID
 @Schema(description = "Pay Status Period")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class PayStatusPeriod(
-  @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "The id. Will be a UUID", example = "e6a19788-4f80-4923-8aff-1e5fe26a6139")
+  @Schema(description = "The id", example = "e6a19788-4f80-4923-8aff-1e5fe26a6139")
   val id: UUID,
 
-  @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "The prisoner number (NOMIS ID)", example = "A1234AA")
+  @Schema(description = "The prisoner number (NOMIS ID)", example = "A1234AA")
   val prisonerNumber: String,
 
-  @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "The pay status type", example = "LONG_TERM_SICK")
+  @Schema(description = "The pay status type", example = "LONG_TERM_SICK")
   val type: PayStatusType,
 
-  @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "The start date", example = "2025-07-23")
+  @Schema(description = "The start date", example = "2025-07-23")
   val startDate: LocalDate,
 
   @Schema(description = "The end date", example = "2025-09-14")
   val endDate: LocalDate?,
 
-  @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "The user who created the pay status period ", example = "USER1")
+  @Schema(description = "The user who created the pay status period ", example = "USER1")
   val createdBy: String,
 
-  @Schema(requiredMode = Schema.RequiredMode.REQUIRED, description = "The date and time the pay status period was created", example = "2025-07-18T12:45:11")
+  @Schema(description = "The date and time the pay status period was created", example = "2025-07-18T12:45:11")
   val createdDateTime: LocalDateTime,
 )

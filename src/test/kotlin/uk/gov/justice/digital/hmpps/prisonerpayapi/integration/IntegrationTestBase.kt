@@ -13,6 +13,7 @@ import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.web.reactive.server.WebTestClient
 import uk.gov.justice.digital.hmpps.prisonerpayapi.integration.wiremock.HmppsAuthApiExtension
 import uk.gov.justice.digital.hmpps.prisonerpayapi.integration.wiremock.HmppsAuthApiExtension.Companion.hmppsAuth
+import uk.gov.justice.hmpps.kotlin.common.ErrorResponse
 import uk.gov.justice.hmpps.test.kotlin.auth.JwtAuthorisationHelper
 
 internal const val USERNAME = "TestUser"
@@ -71,6 +72,10 @@ abstract class IntegrationTestBase {
 
   internal final inline fun <reified T> WebTestClient.ResponseSpec.successList(status: HttpStatus = HttpStatus.OK): List<T> = expectStatus().isEqualTo(status)
     .expectBodyList(T::class.java)
+    .returnResult().responseBody!!
+
+  internal final fun WebTestClient.ResponseSpec.badRequest() = expectStatus().isEqualTo(HttpStatus.BAD_REQUEST)
+    .expectBody(ErrorResponse::class.java)
     .returnResult().responseBody!!
 
   internal final fun WebTestClient.ResponseSpec.fail(status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR) = expectStatus().isEqualTo(status)
