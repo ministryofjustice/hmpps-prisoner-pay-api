@@ -9,6 +9,10 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.CreatePayStatusPeriodRequest
+import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.UpdatePayStatusPeriodRequest
+import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.UUID1
+import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.payStatusPeriod
+import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.today
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusPeriod
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPeriodRepository
@@ -24,9 +28,10 @@ import java.util.*
 class PayStatusPeriodServiceTest {
   val authenticationHolder: HmppsAuthenticationHolder = mock()
   val repository: PayStatusPeriodRepository = mock()
+  val updateService: PayStatusPeriodUpdateService = mock()
   val clock: Clock = Clock.fixed(Instant.parse("2025-07-23T12:34:56Z"), ZoneId.of("Europe/London"))
 
-  val payStatusPeriodService = PayStatusPeriodService(authenticationHolder, repository, clock)
+  val payStatusPeriodService = PayStatusPeriodService(authenticationHolder, repository, updateService, clock)
 
   val captor = argumentCaptor<PayStatusPeriod>()
 
@@ -44,7 +49,8 @@ class PayStatusPeriodServiceTest {
       endDate = LocalDate.now().plusDays(10),
     )
 
-    val newEntity = PayStatusPeriod(
+    val newEntity = payStatusPeriod(
+      id = null,
       prisonerNumber = request.prisonerNumber,
       type = request.type,
       startDate = request.startDate,
@@ -53,7 +59,7 @@ class PayStatusPeriodServiceTest {
       createdDateTime = LocalDateTime.now(clock),
     )
 
-    val savedEntity = PayStatusPeriod(
+    val savedEntity = payStatusPeriod(
       id = UUID.randomUUID(),
       prisonerNumber = newEntity.prisonerNumber,
       type = newEntity.type,
@@ -77,7 +83,7 @@ class PayStatusPeriodServiceTest {
   @Test
   fun `should retrieve pay status periods`() {
     val expectedEntities = listOf(
-      PayStatusPeriod(
+      payStatusPeriod(
         id = UUID.randomUUID(),
         prisonerNumber = "A1111AA",
         type = PayStatusType.LONG_TERM_SICK,
@@ -86,7 +92,7 @@ class PayStatusPeriodServiceTest {
         createdBy = "BLOGGSJ",
         createdDateTime = LocalDateTime.now(clock),
       ),
-      PayStatusPeriod(
+      payStatusPeriod(
         id = UUID.randomUUID(),
         prisonerNumber = "B2222BB",
         type = PayStatusType.LONG_TERM_SICK,
@@ -103,5 +109,22 @@ class PayStatusPeriodServiceTest {
     verify(repository).search(LocalDate.of(2025, 7, 23), true)
 
     assertThat(results).usingRecursiveComparison().isEqualTo(expectedEntities.map { it.toModel() })
+  }
+
+  @Test
+  fun `should update a pay status period`() {
+    val id = UUID1
+
+    val request = UpdatePayStatusPeriodRequest(
+      endDate = today().plusDays(10),
+    )
+
+    val entity = payStatusPeriod()
+
+    whenever(updateService.update(id, request)).thenReturn(entity.toModel())
+
+    val result = payStatusPeriodService.update(id, request)
+
+    assertThat(result).isEqualTo(entity.toModel())
   }
 }

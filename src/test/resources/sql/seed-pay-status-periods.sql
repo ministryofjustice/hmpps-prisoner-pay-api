@@ -1,0 +1,1 @@
+insert into pay_status_period()
