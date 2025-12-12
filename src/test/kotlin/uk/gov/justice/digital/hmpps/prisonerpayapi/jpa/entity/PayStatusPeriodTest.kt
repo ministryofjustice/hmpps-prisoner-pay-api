@@ -4,7 +4,6 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.payStatusPeriod
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 class PayStatusPeriodTest {
   val today = LocalDate.now()
