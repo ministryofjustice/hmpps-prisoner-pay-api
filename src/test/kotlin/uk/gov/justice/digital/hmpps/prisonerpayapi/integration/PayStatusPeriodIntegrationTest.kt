@@ -12,9 +12,9 @@ import org.springframework.http.MediaType
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.CreatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.UpdatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.response.PayStatusPeriod
-import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.createPayStatusRequest
+import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.createPayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.today
-import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.updatePayStatusRequest
+import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.updatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -32,7 +32,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
 
       @Test
       fun `should retrieve the pay status period`() {
-        createPayStatusPeriod(createPayStatusRequest()).success<PayStatusPeriod>()
+        createPayStatusPeriod(createPayStatusPeriodRequest()).success<PayStatusPeriod>()
           .let { originalPayStatusPeriod ->
             with(getPayStatusPeriod(originalPayStatusPeriod.id).success<PayStatusPeriod>()) {
               assertThat(id).isEqualTo(originalPayStatusPeriod.id)
@@ -59,12 +59,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `can create a new pay status period with an end date`() {
-      val request = CreatePayStatusPeriodRequest(
-        prisonerNumber = "A1234AA",
-        type = PayStatusType.LONG_TERM_SICK,
-        startDate = LocalDate.now(),
-        endDate = LocalDate.now().plusDays(10),
-      )
+      val request = createPayStatusPeriodRequest()
 
       val response = createPayStatusPeriod(request).success<PayStatusPeriod>()
 
@@ -81,11 +76,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `can create a new pay status period without an end date`() {
-      val request = CreatePayStatusPeriodRequest(
-        prisonerNumber = "A1234AA",
-        type = PayStatusType.LONG_TERM_SICK,
-        startDate = LocalDate.now(),
-      )
+      val request = createPayStatusPeriodRequest(endDate = null)
 
       val response = createPayStatusPeriod(request).success<PayStatusPeriod>()
 
@@ -102,7 +93,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return bad request start date is after end date`() {
-      with(createPayStatusPeriod(createPayStatusRequest(endDate = today().minusDays(1))).badRequest()) {
+      with(createPayStatusPeriod(createPayStatusPeriodRequest(endDate = today().minusDays(1))).badRequest()) {
         assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
         assertThat(userMessage).isEqualTo("Validation failure: endDate cannot be before startDate")
         assertThat(developerMessage).isEqualTo("endDate cannot be before startDate")
@@ -111,7 +102,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `returns unauthorized when no bearer token`() {
-      val request = CreatePayStatusPeriodRequest(
+      val request = createPayStatusPeriodRequest(
         prisonerNumber = "A1234AA",
         type = PayStatusType.LONG_TERM_SICK,
         startDate = LocalDate.now(),
@@ -125,37 +116,32 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
   @Nested
   @DisplayName("Search for Pay Status Periods")
   inner class SearchPayStatusPeriods {
-    val request1 = CreatePayStatusPeriodRequest(
+    val request1 = createPayStatusPeriodRequest(
       prisonerNumber = "A1111AA",
-      type = PayStatusType.LONG_TERM_SICK,
       startDate = LocalDate.now(),
       endDate = LocalDate.now().plusDays(10),
     )
 
-    val request2 = CreatePayStatusPeriodRequest(
+    val request2 = createPayStatusPeriodRequest(
       prisonerNumber = "B2222BB",
-      type = PayStatusType.LONG_TERM_SICK,
       startDate = LocalDate.now().minusDays(1),
       endDate = LocalDate.now(),
     )
 
-    val request3 = CreatePayStatusPeriodRequest(
+    val request3 = createPayStatusPeriodRequest(
       prisonerNumber = "C3333CC",
-      type = PayStatusType.LONG_TERM_SICK,
       startDate = LocalDate.now().minusDays(10),
       endDate = LocalDate.now().minusDays(1),
     )
 
-    val request4 = CreatePayStatusPeriodRequest(
+    val request4 = createPayStatusPeriodRequest(
       prisonerNumber = "D4444DD",
-      type = PayStatusType.LONG_TERM_SICK,
       startDate = LocalDate.now().minusDays(1),
       endDate = LocalDate.now().plusDays(10),
     )
 
-    val request5 = CreatePayStatusPeriodRequest(
+    val request5 = createPayStatusPeriodRequest(
       prisonerNumber = "E5555EE",
-      type = PayStatusType.LONG_TERM_SICK,
       startDate = LocalDate.now().plusDays(1),
       endDate = LocalDate.now().plusDays(10),
     )
@@ -177,6 +163,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
 
       response.forEach {
         assertThat(it.id).isNotNull
+        assertThat(it.prisonCode).isEqualTo("PVI")
         assertThat(it.type).isEqualTo(PayStatusType.LONG_TERM_SICK)
         assertThat(it.createdBy).isEqualTo(USERNAME)
         assertThat(it.createdDateTime).isCloseTo(LocalDateTime.now(), within(1, ChronoUnit.SECONDS))
@@ -225,10 +212,10 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
       val twoMonths = today().plusMonths(2)
       val sixMonths = twoMonths.plusMonths(4)
 
-      with(createPayStatusPeriod(createPayStatusRequest(endDate = twoMonths)).success<PayStatusPeriod>()) {
+      with(createPayStatusPeriod(createPayStatusPeriodRequest(endDate = twoMonths)).success<PayStatusPeriod>()) {
         assertThat(endDate).isEqualTo(twoMonths)
 
-        updatePayStatusPeriod(id, updatePayStatusRequest(endDate = sixMonths)).success<PayStatusPeriod>()
+        updatePayStatusPeriod(id, updatePayStatusPeriodRequest(endDate = sixMonths)).success<PayStatusPeriod>()
           .let { assertThat(it.endDate).isEqualTo(sixMonths) }
 
         getPayStatusPeriod(id).success<PayStatusPeriod>()
@@ -238,20 +225,20 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should remove the end date of the pay status period`() {
-      with(createPayStatusPeriod(createPayStatusRequest()).success<PayStatusPeriod>()) {
-        updatePayStatusPeriod(id, updatePayStatusRequest(endDate = null, removeEndDate = true)).success<PayStatusPeriod>()
+      with(createPayStatusPeriod(createPayStatusPeriodRequest()).success<PayStatusPeriod>()) {
+        updatePayStatusPeriod(id, updatePayStatusPeriodRequest(endDate = null, removeEndDate = true)).success<PayStatusPeriod>()
           .let { assertThat(it.endDate).isNull() }
       }
     }
 
     @Test
     fun `should return not found if id does not exist`() {
-      updatePayStatusPeriod(UUID.randomUUID(), updatePayStatusRequest()).fail(HttpStatus.NOT_FOUND)
+      updatePayStatusPeriod(UUID.randomUUID(), updatePayStatusPeriodRequest()).fail(HttpStatus.NOT_FOUND)
     }
 
     @Test
     fun `should return bad request if endDate and removeEndDate are supplied`() {
-      with(updatePayStatusPeriod(UUID.randomUUID(), updatePayStatusRequest(removeEndDate = true)).badRequest()) {
+      with(updatePayStatusPeriod(UUID.randomUUID(), updatePayStatusPeriodRequest(removeEndDate = true)).badRequest()) {
         assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
         assertThat(userMessage).isEqualTo("Validation failure: removeEndDate cannot be true when an endDate is also supplied")
         assertThat(developerMessage).isEqualTo("removeEndDate cannot be true when an endDate is also supplied")
@@ -260,7 +247,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `returns unauthorized when no bearer token`() {
-      updatePayStatusPeriod(UUID.randomUUID(), updatePayStatusRequest(), includeBearerAuth = false).fail(HttpStatus.UNAUTHORIZED)
+      updatePayStatusPeriod(UUID.randomUUID(), updatePayStatusPeriodRequest(), includeBearerAuth = false).fail(HttpStatus.UNAUTHORIZED)
     }
   }
 

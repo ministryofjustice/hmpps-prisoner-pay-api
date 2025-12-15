@@ -8,6 +8,7 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusPeriod as
 
 internal fun Entity.toModel(): Dto = Dto(
   id = id!!,
+  prisonCode = prisonCode,
   prisonerNumber = prisonerNumber,
   type = type,
   startDate = startDate,
@@ -18,6 +19,7 @@ internal fun Entity.toModel(): Dto = Dto(
 
 internal fun CreatePayStatusPeriodRequest.toEntity(createdBy: String, clock: Clock) = Entity(
   prisonerNumber = prisonerNumber,
+  prisonCode = prisonCode,
   type = type,
   startDate = startDate,
   endDate = endDate,

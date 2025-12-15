@@ -13,6 +13,9 @@ data class PayStatusPeriod(
   @Schema(description = "The id", example = "e6a19788-4f80-4923-8aff-1e5fe26a6139")
   val id: UUID,
 
+  @Schema(description = "The prison code", example = "PVI")
+  val prisonCode: String,
+
   @Schema(description = "The prisoner number (NOMIS ID)", example = "A1234AA")
   val prisonerNumber: String,
 

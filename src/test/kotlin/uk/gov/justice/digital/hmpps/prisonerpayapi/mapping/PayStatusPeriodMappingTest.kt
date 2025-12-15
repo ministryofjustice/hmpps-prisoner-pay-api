@@ -2,7 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerpayapi.mapping
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.CreatePayStatusPeriodRequest
+import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.createPayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import java.time.Clock
 import java.time.Instant
@@ -20,6 +20,7 @@ class PayStatusPeriodMappingTest {
   fun `should map from entity to dto`() {
     val entity = Entity(
       id = UUID.randomUUID(),
+      prisonCode = "PVI",
       prisonerNumber = "A1234AA",
       type = PayStatusType.LONG_TERM_SICK,
       startDate = LocalDate.now(),
@@ -32,6 +33,7 @@ class PayStatusPeriodMappingTest {
 
     val expectedDto = Dto(
       id = entity.id!!,
+      prisonCode = entity.prisonCode,
       prisonerNumber = entity.prisonerNumber,
       type = entity.type,
       startDate = entity.startDate,
@@ -45,17 +47,13 @@ class PayStatusPeriodMappingTest {
 
   @Test
   fun `should map from dto to entity`() {
-    val dto = CreatePayStatusPeriodRequest(
-      prisonerNumber = "A1234AA",
-      type = PayStatusType.LONG_TERM_SICK,
-      startDate = LocalDate.now(),
-      endDate = LocalDate.now().plusDays(10),
-    )
+    val dto = createPayStatusPeriodRequest()
 
     val result = dto.toEntity("JBLOGGS", clock)
 
     with(result) {
       assertThat(id).isNull()
+      assertThat(prisonCode).isEqualTo(dto.prisonCode)
       assertThat(prisonerNumber).isEqualTo(dto.prisonerNumber)
       assertThat(type).isEqualTo(dto.type)
       assertThat(startDate).isEqualTo(dto.startDate)

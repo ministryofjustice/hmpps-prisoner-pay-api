@@ -28,6 +28,8 @@ class PayStatusPeriod(
   val createdDateTime: LocalDateTime,
 
   val createdBy: String,
+
+  val prisonCode: String,
 ) {
   var endDate: LocalDate? = endDate
     set(value) {
