@@ -17,7 +17,6 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.today
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.updatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.LocalDateTime.now
 import java.time.temporal.ChronoUnit
 import java.util.*
