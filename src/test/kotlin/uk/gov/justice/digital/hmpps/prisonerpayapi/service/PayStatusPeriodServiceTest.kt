@@ -8,13 +8,12 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.CreatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.UpdatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.UUID1
+import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.createPayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.payStatusPeriod
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.today
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusPeriod
-import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPeriodRepository
 import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toModel
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
@@ -42,15 +41,11 @@ class PayStatusPeriodServiceTest {
 
   @Test
   fun `should save pay status period`() {
-    val request = CreatePayStatusPeriodRequest(
-      prisonerNumber = "A1234AA",
-      type = PayStatusType.LONG_TERM_SICK,
-      startDate = LocalDate.now(),
-      endDate = LocalDate.now().plusDays(10),
-    )
+    val request = createPayStatusPeriodRequest()
 
     val newEntity = payStatusPeriod(
       id = null,
+      prisonCode = request.prisonCode,
       prisonerNumber = request.prisonerNumber,
       type = request.type,
       startDate = request.startDate,
@@ -61,6 +56,7 @@ class PayStatusPeriodServiceTest {
 
     val savedEntity = payStatusPeriod(
       id = UUID.randomUUID(),
+      prisonCode = newEntity.prisonCode,
       prisonerNumber = newEntity.prisonerNumber,
       type = newEntity.type,
       startDate = newEntity.startDate,
@@ -86,7 +82,6 @@ class PayStatusPeriodServiceTest {
       payStatusPeriod(
         id = UUID.randomUUID(),
         prisonerNumber = "A1111AA",
-        type = PayStatusType.LONG_TERM_SICK,
         startDate = LocalDate.of(2025, 7, 23),
         endDate = LocalDate.of(2025, 11, 1),
         createdBy = "BLOGGSJ",
@@ -95,7 +90,6 @@ class PayStatusPeriodServiceTest {
       payStatusPeriod(
         id = UUID.randomUUID(),
         prisonerNumber = "B2222BB",
-        type = PayStatusType.LONG_TERM_SICK,
         startDate = LocalDate.of(2025, 4, 13),
         createdBy = "SMITHK",
         createdDateTime = LocalDateTime.now(clock),
