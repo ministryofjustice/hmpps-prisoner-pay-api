@@ -18,8 +18,10 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.updatePayStatusPeriodR
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalDateTime.now
 import java.time.temporal.ChronoUnit
 import java.util.*
+import java.util.Optional.ofNullable
 
 class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
   @Nested
@@ -41,7 +43,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
               assertThat(startDate).isEqualTo(originalPayStatusPeriod.startDate)
               assertThat(endDate).isEqualTo(originalPayStatusPeriod.endDate)
               assertThat(createdBy).isEqualTo(USERNAME)
-              assertThat(createdDateTime).isCloseTo(LocalDateTime.now(), within(1, ChronoUnit.SECONDS))
+              assertThat(createdDateTime).isCloseTo(now(), within(1, ChronoUnit.SECONDS))
             }
           }
       }
@@ -70,7 +72,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
         assertThat(startDate).isEqualTo(request.startDate)
         assertThat(endDate).isEqualTo(request.endDate)
         assertThat(createdBy).isEqualTo(USERNAME)
-        assertThat(createdDateTime).isCloseTo(LocalDateTime.now(), within(1, ChronoUnit.SECONDS))
+        assertThat(createdDateTime).isCloseTo(now(), within(1, ChronoUnit.SECONDS))
       }
     }
 
@@ -87,7 +89,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
         assertThat(startDate).isEqualTo(request.startDate)
         assertThat(endDate).isNull()
         assertThat(createdBy).isEqualTo(USERNAME)
-        assertThat(createdDateTime).isCloseTo(LocalDateTime.now(), within(1, ChronoUnit.SECONDS))
+        assertThat(createdDateTime).isCloseTo(now(), within(1, ChronoUnit.SECONDS))
       }
     }
 
@@ -105,8 +107,8 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
       val request = createPayStatusPeriodRequest(
         prisonerNumber = "A1234AA",
         type = PayStatusType.LONG_TERM_SICK,
-        startDate = LocalDate.now(),
-        endDate = LocalDate.now().plusDays(10),
+        startDate = today(),
+        endDate = today().plusDays(10),
       )
 
       createPayStatusPeriod(request, includeBearerAuth = false).fail(HttpStatus.UNAUTHORIZED)
@@ -118,32 +120,39 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
   inner class SearchPayStatusPeriods {
     val request1 = createPayStatusPeriodRequest(
       prisonerNumber = "A1111AA",
-      startDate = LocalDate.now(),
-      endDate = LocalDate.now().plusDays(10),
+      startDate = today(),
+      endDate = today().plusDays(10),
     )
 
     val request2 = createPayStatusPeriodRequest(
       prisonerNumber = "B2222BB",
-      startDate = LocalDate.now().minusDays(1),
-      endDate = LocalDate.now(),
+      startDate = today().minusDays(1),
+      endDate = today(),
     )
 
     val request3 = createPayStatusPeriodRequest(
       prisonerNumber = "C3333CC",
-      startDate = LocalDate.now().minusDays(10),
-      endDate = LocalDate.now().minusDays(1),
+      startDate = today().minusDays(10),
+      endDate = today().minusDays(1),
     )
 
     val request4 = createPayStatusPeriodRequest(
       prisonerNumber = "D4444DD",
-      startDate = LocalDate.now().minusDays(1),
-      endDate = LocalDate.now().plusDays(10),
+      startDate = today().minusDays(1),
+      endDate = today().plusDays(10),
     )
 
     val request5 = createPayStatusPeriodRequest(
       prisonerNumber = "E5555EE",
-      startDate = LocalDate.now().plusDays(1),
-      endDate = LocalDate.now().plusDays(10),
+      startDate = today().plusDays(1),
+      endDate = today().plusDays(10),
+    )
+
+    val request6 = createPayStatusPeriodRequest(
+      prisonCode = "RSI",
+      prisonerNumber = "F6666FF",
+      startDate = today(),
+      endDate = today().plusDays(10),
     )
 
     @BeforeEach
@@ -153,11 +162,33 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
       createPayStatusPeriod(request3).success<PayStatusPeriod>()
       createPayStatusPeriod(request4).success<PayStatusPeriod>()
       createPayStatusPeriod(request5).success<PayStatusPeriod>()
+      createPayStatusPeriod(request6).success<PayStatusPeriod>()
     }
 
     @Test
-    fun `should return active pay status periods`() {
-      val response = searchPayStatusPeriods(LocalDate.now()).successList<PayStatusPeriod>()
+    fun `should return active pay status periods for all prisons`() {
+      val response = searchPayStatusPeriods(today()).successList<PayStatusPeriod>()
+
+      assertThat(response).hasSize(4)
+
+      response.forEach {
+        assertThat(it.id).isNotNull
+        assertThat(it.type).isEqualTo(PayStatusType.LONG_TERM_SICK)
+        assertThat(it.createdBy).isEqualTo(USERNAME)
+        assertThat(it.createdDateTime).isCloseTo(now(), within(1, ChronoUnit.SECONDS))
+      }
+
+      assertThat(response).extracting("prisonCode", "prisonerNumber", "startDate", "endDate").containsExactly(
+        tuple(request2.prisonCode, request2.prisonerNumber, request2.startDate, request2.endDate),
+        tuple(request4.prisonCode, request4.prisonerNumber, request4.startDate, request4.endDate),
+        tuple(request1.prisonCode, request1.prisonerNumber, request1.startDate, request1.endDate),
+        tuple(request6.prisonCode, request6.prisonerNumber, request6.startDate, request6.endDate),
+      )
+    }
+
+    @Test
+    fun `should return active pay status periods for a prison`() {
+      val response = searchPayStatusPeriods(today(), prisonCode = "PVI").successList<PayStatusPeriod>()
 
       assertThat(response).hasSize(3)
 
@@ -166,7 +197,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
         assertThat(it.prisonCode).isEqualTo("PVI")
         assertThat(it.type).isEqualTo(PayStatusType.LONG_TERM_SICK)
         assertThat(it.createdBy).isEqualTo(USERNAME)
-        assertThat(it.createdDateTime).isCloseTo(LocalDateTime.now(), within(1, ChronoUnit.SECONDS))
+        assertThat(it.createdDateTime).isCloseTo(now(), within(1, ChronoUnit.SECONDS))
       }
 
       assertThat(response).extracting("prisonerNumber", "startDate", "endDate").containsExactly(
@@ -178,15 +209,15 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return all pay status periods`() {
-      val response = searchPayStatusPeriods(LocalDate.now(), false).successList<PayStatusPeriod>()
+      val response = searchPayStatusPeriods(today(), false).successList<PayStatusPeriod>()
 
-      assertThat(response).hasSize(4)
+      assertThat(response).hasSize(5)
 
       response.forEach {
         assertThat(it.id).isNotNull
         assertThat(it.type).isEqualTo(PayStatusType.LONG_TERM_SICK)
         assertThat(it.createdBy).isEqualTo(USERNAME)
-        assertThat(it.createdDateTime).isCloseTo(LocalDateTime.now(), within(1, ChronoUnit.SECONDS))
+        assertThat(it.createdDateTime).isCloseTo(now(), within(1, ChronoUnit.SECONDS))
       }
 
       assertThat(response).extracting("prisonerNumber", "startDate", "endDate").containsExactly(
@@ -194,12 +225,13 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
         tuple(request2.prisonerNumber, request2.startDate, request2.endDate),
         tuple(request4.prisonerNumber, request4.startDate, request4.endDate),
         tuple(request1.prisonerNumber, request1.startDate, request1.endDate),
+        tuple(request6.prisonerNumber, request6.startDate, request6.endDate),
       )
     }
 
     @Test
     fun `returns unauthorized when no bearer token`() {
-      searchPayStatusPeriods(LocalDate.now(), includeBearerAuth = false).fail(HttpStatus.UNAUTHORIZED)
+      searchPayStatusPeriods(today(), includeBearerAuth = false).fail(HttpStatus.UNAUTHORIZED)
     }
   }
 
@@ -279,6 +311,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
   private fun searchPayStatusPeriods(
     latestStartDate: LocalDate,
     activeOnly: Boolean = true,
+    prisonCode: String? = null,
     username: String = USERNAME,
     roles: List<String> = listOf(),
     includeBearerAuth: Boolean = true,
@@ -289,6 +322,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
         .path("/pay-status-periods")
         .queryParam("latestStartDate", latestStartDate)
         .queryParam("activeOnly", activeOnly)
+        .queryParamIfPresent("prisonCode", ofNullable(prisonCode))
         .build()
     }
     .accept(MediaType.APPLICATION_JSON)

@@ -151,10 +151,15 @@ class PayStatusPeriodController(
     @RequestParam(value = "latestStartDate")
     @Parameter(description = "The latest start date the pay status periods started on", example = "2025-07-18")
     latestStartDate: LocalDate,
+
+    @RequestParam(value = "prisonCode")
+    @Parameter(description = "a prison code", example = "PVI")
+    prisonCode: String? = null,
+
     @RequestParam(value = "activeOnly", required = false, defaultValue = "true")
     @Parameter(description = "Whether to return results which are currently active, i.e. the end date is null or not before today", example = "true")
     activeOnly: Boolean = true,
-  ) = payStatusPeriodService.search(latestStartDate, activeOnly)
+  ) = payStatusPeriodService.search(latestStartDate, activeOnly, prisonCode)
 
   @PatchMapping(value = ["/{id}"])
   @PreAuthorize("permitAll()") // TODO: Add roles

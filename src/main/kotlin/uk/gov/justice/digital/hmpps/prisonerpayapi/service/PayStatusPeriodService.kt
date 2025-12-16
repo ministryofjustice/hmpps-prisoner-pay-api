@@ -37,8 +37,8 @@ class PayStatusPeriodService(
     .toModel()
 
   @Transactional(readOnly = true)
-  fun search(latestStartDate: LocalDate, activeOnly: Boolean) = repository
-    .search(latestStartDate, activeOnly)
+  fun search(latestStartDate: LocalDate, activeOnly: Boolean, prisonCode: String? = null) = repository
+    .search(latestStartDate, activeOnly, prisonCode)
     .map { it.toModel() }
 
   fun update(id: UUID, request: UpdatePayStatusPeriodRequest): PayStatusPeriod = updateService.update(id, request)
