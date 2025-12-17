@@ -280,31 +280,36 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
     fun `returns unauthorized when no bearer token`() {
       updatePayStatusPeriod(UUID.randomUUID(), updatePayStatusPeriodRequest(), includeBearerAuth = false).fail(HttpStatus.UNAUTHORIZED)
     }
+
+    @Test
+    fun `returns forbidden when role is incorrect`() {
+      updatePayStatusPeriod(UUID.randomUUID(), updatePayStatusPeriodRequest(), roles = listOf("ROLE_NO_PERMISSIONS")).fail(HttpStatus.FORBIDDEN)
+    }
   }
 
   private fun getPayStatusPeriod(
     id: UUID,
     username: String = USERNAME,
-    roles: List<String> = listOf(),
+    roles: List<String> = listOf("ROLE_PRISONER_PAY__PRISONER_PAY_ORCHESTRATOR_API"),
     includeBearerAuth: Boolean = true,
   ) = webTestClient
     .get()
     .uri("/pay-status-periods/$id")
     .accept(MediaType.APPLICATION_JSON)
-    .headers(if (includeBearerAuth) setAuthorisation() else noAuthorisation())
+    .headers(if (includeBearerAuth) setAuthorisation(roles = roles) else noAuthorisation())
     .exchange()
 
   private fun createPayStatusPeriod(
     request: CreatePayStatusPeriodRequest,
     username: String = USERNAME,
-    roles: List<String> = listOf(),
+    roles: List<String> = listOf("ROLE_PRISONER_PAY__PRISONER_PAY_ORCHESTRATOR_API"),
     includeBearerAuth: Boolean = true,
   ) = webTestClient
     .post()
     .uri("/pay-status-periods")
     .bodyValue(request)
     .accept(MediaType.APPLICATION_JSON)
-    .headers(if (includeBearerAuth) setAuthorisation() else noAuthorisation())
+    .headers(if (includeBearerAuth) setAuthorisation(roles = roles) else noAuthorisation())
     .exchange()
 
   private fun searchPayStatusPeriods(
@@ -312,7 +317,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
     activeOnly: Boolean = true,
     prisonCode: String? = null,
     username: String = USERNAME,
-    roles: List<String> = listOf(),
+    roles: List<String> = listOf("ROLE_PRISONER_PAY__PRISONER_PAY_ORCHESTRATOR_API"),
     includeBearerAuth: Boolean = true,
   ) = webTestClient
     .get()
@@ -325,20 +330,20 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
         .build()
     }
     .accept(MediaType.APPLICATION_JSON)
-    .headers(if (includeBearerAuth) setAuthorisation() else noAuthorisation())
+    .headers(if (includeBearerAuth) setAuthorisation(roles = roles) else noAuthorisation())
     .exchange()
 
   private fun updatePayStatusPeriod(
     id: UUID,
     request: UpdatePayStatusPeriodRequest,
     username: String = USERNAME,
-    roles: List<String> = listOf(),
+    roles: List<String> = listOf("ROLE_PRISONER_PAY__PRISONER_PAY_ORCHESTRATOR_API"),
     includeBearerAuth: Boolean = true,
   ) = webTestClient
     .patch()
     .uri("/pay-status-periods/$id")
     .bodyValue(request)
     .accept(MediaType.APPLICATION_JSON)
-    .headers(if (includeBearerAuth) setAuthorisation() else noAuthorisation())
+    .headers(if (includeBearerAuth) setAuthorisation(roles = roles) else noAuthorisation())
     .exchange()
 }

@@ -38,7 +38,7 @@ class PayStatusPeriodController(
   private val payStatusPeriodService: PayStatusPeriodService,
 ) {
   @GetMapping("/{id}")
-  @PreAuthorize("permitAll()") // TODO: Add roles
+  @PreAuthorize("hasRole('ROLE_PRISONER_PAY__PRISONER_PAY_ORCHESTRATOR_API')")
   @ResponseStatus(HttpStatus.OK)
   @Operation(
     summary = "Retrieve a pay status periods by its id",
