@@ -302,7 +302,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
   private fun createPayStatusPeriod(
     request: CreatePayStatusPeriodRequest,
     username: String = USERNAME,
-    roles: List<String> = listOf("ROLE_PRISONER_PAY__PRISONER_PAY_ORCHESTRATOR_API"),
+    roles: List<String> = listOf("ROLE_PRISONER_PAY__PRISONER_PAY_UI"),
     includeBearerAuth: Boolean = true,
   ) = webTestClient
     .post()
@@ -337,7 +337,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
     id: UUID,
     request: UpdatePayStatusPeriodRequest,
     username: String = USERNAME,
-    roles: List<String> = listOf("ROLE_PRISONER_PAY__PRISONER_PAY_ORCHESTRATOR_API"),
+    roles: List<String> = listOf("ROLE_PRISONER_PAY__PRISONER_PAY_UI"),
     includeBearerAuth: Boolean = true,
   ) = webTestClient
     .patch()
