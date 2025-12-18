@@ -56,6 +56,11 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
       fun `returns unauthorized when no bearer token`() {
         getPayStatusPeriod(UUID.randomUUID(), includeBearerAuth = false).fail(HttpStatus.UNAUTHORIZED)
       }
+
+      @Test
+      fun `returns forbidden when role is incorrect`() {
+        getPayStatusPeriod(UUID.randomUUID(), roles = listOf("ROLE_NO_PERMISSIONS")).fail(HttpStatus.FORBIDDEN)
+      }
     }
 
     @Test
@@ -111,6 +116,11 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
       )
 
       createPayStatusPeriod(request, includeBearerAuth = false).fail(HttpStatus.UNAUTHORIZED)
+    }
+
+    @Test
+    fun `returns forbidden when role is incorrect`() {
+      createPayStatusPeriod(createPayStatusPeriodRequest(), roles = listOf("ROLE_NO_PERMISSIONS")).fail(HttpStatus.FORBIDDEN)
     }
   }
 
@@ -231,6 +241,11 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
     @Test
     fun `returns unauthorized when no bearer token`() {
       searchPayStatusPeriods(today(), includeBearerAuth = false).fail(HttpStatus.UNAUTHORIZED)
+    }
+
+    @Test
+    fun `returns forbidden when role is incorrect`() {
+      searchPayStatusPeriods(today(), roles = listOf("ROLE_NO_PERMISSIONS")).fail(HttpStatus.FORBIDDEN)
     }
   }
 
