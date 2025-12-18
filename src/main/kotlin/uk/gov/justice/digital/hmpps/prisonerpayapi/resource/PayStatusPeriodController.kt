@@ -38,7 +38,7 @@ class PayStatusPeriodController(
   private val payStatusPeriodService: PayStatusPeriodService,
 ) {
   @GetMapping("/{id}")
-  @PreAuthorize("permitAll()") // TODO: Add roles
+  @PreAuthorize("hasRole('ROLE_PRISONER_PAY__PRISONER_PAY_ORCHESTRATOR_API')")
   @ResponseStatus(HttpStatus.OK)
   @Operation(
     summary = "Retrieve a pay status periods by its id",
@@ -73,12 +73,12 @@ class PayStatusPeriodController(
   )
   fun get(
     @PathVariable
-    @Parameter(description = "The id of the of the pay status period")
+    @Parameter(description = "The id of the pay status period")
     id: UUID,
   ) = payStatusPeriodService.getById(id)
 
   @PostMapping
-  @PreAuthorize("permitAll()") // TODO: Add roles
+  @PreAuthorize("hasRole('ROLE_PRISONER_PAY__PRISONER_PAY_UI')")
   @ResponseStatus(HttpStatus.OK)
   @Operation(
     summary = "Create a new pay status period",
@@ -119,7 +119,7 @@ class PayStatusPeriodController(
   ) = payStatusPeriodService.create(request)
 
   @GetMapping
-  @PreAuthorize("permitAll()") // TODO: Add roles
+  @PreAuthorize("hasRole('ROLE_PRISONER_PAY__PRISONER_PAY_ORCHESTRATOR_API')")
   @ResponseStatus(HttpStatus.OK)
   @Operation(
     summary = "Retrieve a list of pay status periods ordered by start date",
@@ -151,18 +151,16 @@ class PayStatusPeriodController(
     @RequestParam(value = "latestStartDate")
     @Parameter(description = "The latest start date the pay status periods started on", example = "2025-07-18")
     latestStartDate: LocalDate,
-
     @RequestParam(value = "prisonCode")
     @Parameter(description = "a prison code", example = "PVI")
     prisonCode: String? = null,
-
     @RequestParam(value = "activeOnly", required = false, defaultValue = "true")
     @Parameter(description = "Whether to return results which are currently active, i.e. the end date is null or not before today", example = "true")
     activeOnly: Boolean = true,
   ) = payStatusPeriodService.search(latestStartDate, activeOnly, prisonCode)
 
   @PatchMapping(value = ["/{id}"])
-  @PreAuthorize("permitAll()") // TODO: Add roles
+  @PreAuthorize("hasRole('ROLE_PRISONER_PAY__PRISONER_PAY_UI')")
   @ResponseStatus(HttpStatus.OK)
   @Operation(
     summary = "Update a pay status period",
@@ -197,7 +195,7 @@ class PayStatusPeriodController(
   )
   fun update(
     @PathVariable
-    @Parameter(description = "The id of the of the pay status period")
+    @Parameter(description = "The id of the pay status period")
     id: UUID,
     @Valid
     @RequestBody
