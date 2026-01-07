@@ -11,6 +11,12 @@ generic-service:
     APPLICATIONINSIGHTS_CONFIGURATION_FILE: "applicationinsights.dev.json"
     API_BASE_URL_HMPPS_AUTH: "https://sign-in-preprod.hmpps.service.justice.gov.uk/auth"
 
+  namespace_secrets:
+    sqs-prisoner-pay-api-jobs-queue-secret:
+      HMPPS_SQS_QUEUES_PRISONERPAYJOBS_QUEUE_NAME: "sqs_queue_name"
+    sqs-prisoner-pay-api-jobs-dlq-secret:
+      HMPPS_SQS_QUEUES_PRISONERPAYJOBS_DLQ_NAME: "sqs_queue_name"
+
 # CloudPlatform AlertManager receiver to route prometheus alerts to slack
 # See https://user-guide.cloud-platform.service.justice.gov.uk/documentation/monitoring-an-app/how-to-create-alarms.html#creating-your-own-custom-alerts
 generic-prometheus-alerts:

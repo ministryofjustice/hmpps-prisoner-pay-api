@@ -29,6 +29,13 @@ api:
     url:
       hmpps-auth: http://localhost:8090/auth
 
+hmpps.sqs:
+  provider: localstack
+  queues:
+    prisonerpayjobs:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
+
 #hmpps:
 #  test:
 #    jwt-helper-enabled: false
