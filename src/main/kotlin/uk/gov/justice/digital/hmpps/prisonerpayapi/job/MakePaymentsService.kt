@@ -39,7 +39,7 @@ class MakePaymentsService(
   }
 
   fun handleEvent(jobBatchId: UUID, jobStartDateTime: LocalDateTime, prisonCode: String) {
-    // TODO: Add a facade prior until we can call a physical service
+    // TODO: Add a facade until we can call a physical service
     log.debug("Handling event for make payments for {}, {}, {}", jobBatchId, jobStartDateTime, prisonCode)
   }
 }
