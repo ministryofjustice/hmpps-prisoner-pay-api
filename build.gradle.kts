@@ -1,52 +1,44 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "9.3.0"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "10.0.0"
   kotlin("plugin.spring") version "2.3.0"
   kotlin("plugin.jpa") version "2.3.0"
 }
 
-configurations {
-  testImplementation { exclude(group = "org.junit.vintage") }
-}
-
 dependencies {
-  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:1.8.2")
-  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:5.6.3")
+  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:2.0.0")
+  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:6.0.0")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
-  implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.15")
+  implementation("org.springframework.boot:spring-boot-starter-webclient")
+  implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.1")
   implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-  implementation("aws.sdk.kotlin:s3:1.5.106")
+  implementation("org.springframework.boot:spring-boot-starter-flyway")
+  implementation("aws.sdk.kotlin:s3:1.5.116")
 
   runtimeOnly("org.postgresql:postgresql")
-  runtimeOnly("org.flywaydb:flyway-database-postgresql")
+  runtimeOnly("org.flywaydb:flyway-database-postgresql:11.20.0")
 
-  testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:1.8.2")
+  testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:2.0.0")
+  testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
   testImplementation("org.wiremock:wiremock-standalone:3.13.2")
   testImplementation("io.swagger.parser.v3:swagger-parser:2.1.37") {
     exclude(group = "io.swagger.core.v3")
   }
   testImplementation("org.springframework.boot:spring-boot-testcontainers")
-  testImplementation("org.testcontainers:postgresql")
-  testImplementation("org.testcontainers:localstack")
+  testImplementation("org.testcontainers:postgresql:1.21.4")
+  testImplementation("org.testcontainers:localstack:1.21.4")
 }
 
 kotlin {
   jvmToolchain(25)
   compilerOptions {
-    freeCompilerArgs.addAll("-Xjvm-default=all", "-Xwhen-guards", "-Xannotation-default-target=param-property")
+    freeCompilerArgs.addAll("-Xannotation-default-target=param-property")
   }
-}
-
-java {
-  sourceCompatibility = JavaVersion.VERSION_24
-  targetCompatibility = JavaVersion.VERSION_24
 }
 
 tasks {
   withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    compilerOptions {
-      jvmTarget.set(JvmTarget.JVM_24)
-    }
+    compilerOptions.jvmTarget = JvmTarget.JVM_25
   }
 }

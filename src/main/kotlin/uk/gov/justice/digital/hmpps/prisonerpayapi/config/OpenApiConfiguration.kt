@@ -28,7 +28,7 @@ class OpenApiConfiguration(buildProperties: BuildProperties) {
   @Autowired
   private lateinit var context: ApplicationContext
 
-  private val version: String = buildProperties.version
+  private val version: String = buildProperties.version!!
 
   @Bean
   fun customOpenAPI(): OpenAPI = OpenAPI()
