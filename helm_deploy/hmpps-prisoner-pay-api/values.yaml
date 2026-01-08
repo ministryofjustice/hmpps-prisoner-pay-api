@@ -22,7 +22,7 @@ generic-service:
           deny all;
           return 401;
         }
-        location /job-admin/run/{jobName} {
+        location /job-admin/ {
           deny all;
           return 401;
         }
