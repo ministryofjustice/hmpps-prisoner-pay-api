@@ -14,5 +14,20 @@ services:
       POSTGRES_USER: prisoner-pay-api
       POSTGRES_PASSWORD: prisoner-pay-api
 
+  localstack:
+    image: localstack/localstack:4
+    #    image: localstack/localstack:4-arm64
+    networks:
+      - hmpps
+    container_name: prisoner-pay-api-localstack
+    restart: always
+    ports:
+      - "14566:4566"
+    environment:
+      - SERVICES=sqs
+    volumes:
+      - "./localstack:/etc/localstack/init/ready.d"
+      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
+
 networks:
   hmpps:

@@ -27,42 +27,6 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
   @DisplayName("Create a new Pay Status Period")
   inner class CreatePayStatusPeriod {
 
-    @Nested
-    @DisplayName("Retrieve a Pay Status Period")
-    inner class RetrievePayStatusPeriod {
-
-      @Test
-      fun `should retrieve the pay status period`() {
-        createPayStatusPeriod(createPayStatusPeriodRequest()).success<PayStatusPeriod>()
-          .let { originalPayStatusPeriod ->
-            with(getPayStatusPeriod(originalPayStatusPeriod.id).success<PayStatusPeriod>()) {
-              assertThat(id).isEqualTo(originalPayStatusPeriod.id)
-              assertThat(type).isEqualTo(originalPayStatusPeriod.type)
-              assertThat(prisonerNumber).isEqualTo(originalPayStatusPeriod.prisonerNumber)
-              assertThat(startDate).isEqualTo(originalPayStatusPeriod.startDate)
-              assertThat(endDate).isEqualTo(originalPayStatusPeriod.endDate)
-              assertThat(createdBy).isEqualTo(USERNAME)
-              assertThat(createdDateTime).isCloseTo(now(), within(1, ChronoUnit.SECONDS))
-            }
-          }
-      }
-
-      @Test
-      fun `should return not found if id does not exist`() {
-        getPayStatusPeriod(UUID.randomUUID()).fail(HttpStatus.NOT_FOUND)
-      }
-
-      @Test
-      fun `returns unauthorized when no bearer token`() {
-        getPayStatusPeriod(UUID.randomUUID(), includeBearerAuth = false).fail(HttpStatus.UNAUTHORIZED)
-      }
-
-      @Test
-      fun `returns forbidden when role is incorrect`() {
-        getPayStatusPeriod(UUID.randomUUID(), roles = listOf("ROLE_NO_PERMISSIONS")).fail(HttpStatus.FORBIDDEN)
-      }
-    }
-
     @Test
     fun `can create a new pay status period with an end date`() {
       val request = createPayStatusPeriodRequest()
@@ -121,6 +85,42 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
     @Test
     fun `returns forbidden when role is incorrect`() {
       createPayStatusPeriod(createPayStatusPeriodRequest(), roles = listOf("ROLE_NO_PERMISSIONS")).fail(HttpStatus.FORBIDDEN)
+    }
+  }
+
+  @Nested
+  @DisplayName("Retrieve a Pay Status Period")
+  inner class RetrievePayStatusPeriod {
+
+    @Test
+    fun `should retrieve the pay status period`() {
+      createPayStatusPeriod(createPayStatusPeriodRequest()).success<PayStatusPeriod>()
+        .let { originalPayStatusPeriod ->
+          with(getPayStatusPeriod(originalPayStatusPeriod.id).success<PayStatusPeriod>()) {
+            assertThat(id).isEqualTo(originalPayStatusPeriod.id)
+            assertThat(type).isEqualTo(originalPayStatusPeriod.type)
+            assertThat(prisonerNumber).isEqualTo(originalPayStatusPeriod.prisonerNumber)
+            assertThat(startDate).isEqualTo(originalPayStatusPeriod.startDate)
+            assertThat(endDate).isEqualTo(originalPayStatusPeriod.endDate)
+            assertThat(createdBy).isEqualTo(USERNAME)
+            assertThat(createdDateTime).isCloseTo(now(), within(1, ChronoUnit.SECONDS))
+          }
+        }
+    }
+
+    @Test
+    fun `should return not found if id does not exist`() {
+      getPayStatusPeriod(UUID.randomUUID()).fail(HttpStatus.NOT_FOUND)
+    }
+
+    @Test
+    fun `returns unauthorized when no bearer token`() {
+      getPayStatusPeriod(UUID.randomUUID(), includeBearerAuth = false).fail(HttpStatus.UNAUTHORIZED)
+    }
+
+    @Test
+    fun `returns forbidden when role is incorrect`() {
+      getPayStatusPeriod(UUID.randomUUID(), roles = listOf("ROLE_NO_PERMISSIONS")).fail(HttpStatus.FORBIDDEN)
     }
   }
 

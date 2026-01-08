@@ -11,3 +11,11 @@ api:
   base:
     url:
       hmpps-auth: https://sign-in-dev.hmpps.service.justice.gov.uk/auth
+
+hmpps.sqs:
+  provider: localstack
+  localstackUrl: http://localhost:14566
+  queues:
+    prisonerpayjobs:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}

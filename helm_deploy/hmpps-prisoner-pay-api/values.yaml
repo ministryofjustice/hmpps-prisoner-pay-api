@@ -13,6 +13,26 @@ generic-service:
     enabled: true
     host: app-hostname.local # override per environment
     tlsSecretName: prisoner-pay-api-cert
+    path: /
+    annotations:
+      # Secure the endpoints related to k8s jobs from outside the Kubernetes ingress
+      nginx.ingress.kubernetes.io/server-snippet: |
+        server_tokens off;
+        location /queue-admin/retry-all-dlqs {
+          deny all;
+          return 401;
+        }
+        location /job-admin/run/{jobName} {
+          deny all;
+          return 401;
+        }
+        location /utility/ {
+          deny all;
+          return 401;
+        }
+
+  # Used to access resources like SQS queues and SNS topics
+  serviceAccountName: hmpps-prisoner-pay
 
   # Environment variables to load into the deployment
   env:
@@ -36,6 +56,10 @@ generic-service:
       DB_NAME: "database_name"
       DB_USER: "database_username"
       DB_PASS: "database_password"
+    sqs-prisoner-pay-api-jobs-queue-secret:
+      HMPPS_SQS_QUEUES_PRISONERPAYJOBS_QUEUE_NAME: "sqs_queue_name"
+    sqs-prisoner-pay-api-jobs-dlq-secret:
+      HMPPS_SQS_QUEUES_PRISONERPAYJOBS_DLQ_NAME: "sqs_queue_name"
 
   allowlist:
     groups:
@@ -43,3 +67,6 @@ generic-service:
 
 generic-prometheus-alerts:
   targetApplication: hmpps-prisoner-pay-api
+
+cron:
+  makePayments: "0 2 * * *"

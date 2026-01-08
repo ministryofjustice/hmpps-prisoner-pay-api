@@ -11,6 +11,9 @@ import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.web.reactive.server.WebTestClient
+import uk.gov.justice.digital.hmpps.prisonerpayapi.integration.config.LocalStackContainer
+import uk.gov.justice.digital.hmpps.prisonerpayapi.integration.config.LocalStackContainer.setLocalStackProperties
+import uk.gov.justice.digital.hmpps.prisonerpayapi.integration.config.PostgresContainer
 import uk.gov.justice.digital.hmpps.prisonerpayapi.integration.wiremock.HmppsAuthApiExtension
 import uk.gov.justice.digital.hmpps.prisonerpayapi.integration.wiremock.HmppsAuthApiExtension.Companion.hmppsAuth
 import uk.gov.justice.hmpps.kotlin.common.ErrorResponse
@@ -31,6 +34,7 @@ abstract class IntegrationTestBase {
 
   companion object {
     internal val db = PostgresContainer.instance
+    internal val localstack = LocalStackContainer.instance
 
     @JvmStatic
     @DynamicPropertySource
@@ -40,6 +44,7 @@ abstract class IntegrationTestBase {
         registry.add("spring.datasource.username", db::getUsername)
         registry.add("spring.datasource.password", db::getPassword)
       }
+      localstack?.also { setLocalStackProperties(it, registry) }
     }
   }
 
