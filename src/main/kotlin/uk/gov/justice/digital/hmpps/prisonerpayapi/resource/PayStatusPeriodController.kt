@@ -43,11 +43,10 @@ class PayStatusPeriodController(
   @ResponseStatus(HttpStatus.OK)
   @Operation(
     summary = "Retrieve a pay status periods by its id",
-    // description = "Requires role <TODO>",
     responses = [
       ApiResponse(
         responseCode = "200",
-        description = "Returns the new prisoner status period",
+        description = "Returns the prisoner status period",
         content = [Content(mediaType = "application/json", array = ArraySchema(schema = Schema(implementation = PayStatusPeriod::class)))],
       ),
       ApiResponse(
@@ -73,7 +72,6 @@ class PayStatusPeriodController(
   @ResponseStatus(HttpStatus.OK)
   @Operation(
     summary = "Create a new pay status period",
-    // description = "Requires role <TODO>",
     responses = [
       ApiResponse(
         responseCode = "200",
@@ -140,7 +138,7 @@ class PayStatusPeriodController(
       ApiResponse(
         responseCode = "200",
         description = "Returns the new prisoner status period",
-        content = [Content(mediaType = "application/json", array = ArraySchema(schema = Schema(implementation = PayStatusPeriod::class)))],
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = PayStatusPeriod::class))],
       ),
       ApiResponse(
         responseCode = "400",
