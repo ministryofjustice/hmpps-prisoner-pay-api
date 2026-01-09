@@ -40,6 +40,7 @@ jobs:
     with:
       environment: ${{ matrix.environments }}
   app_version:
+    name: Determine application version
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.app_version.outputs.version }}
