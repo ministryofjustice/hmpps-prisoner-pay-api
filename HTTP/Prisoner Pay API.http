@@ -1,0 +1,49 @@
+Prisoner Pay API.http:
+
+### Get info
+
+GET {{baseUrl}}/info
+
+### Get pay status period by id
+
+// @no-log
+GET {{ baseUrl }}/pay-status-periods/019b9e84-de01-7939-859e-e72af57bd7f1
+Authorization: Bearer {{$auth.token("orchestrator-auth-token")}}
+
+### Get list of pay status periods
+
+// @no-log
+GET {{ baseUrl }}/pay-status-periods?
+    latestStartDate=2025-12-02&
+    activeOnly=false&
+    prisonCode=RSI
+Authorization: Bearer {{$auth.token("orchestrator-auth-token")}}
+
+### Create a new pay status period
+
+// @no-log
+POST {{ baseUrl }}/pay-status-periods
+Authorization: Bearer {{$auth.token("ui-auth-token")}}
+Content-Type: application/json
+
+{
+    "prisonCode": "RSI",
+    "prisonerNumber": "G3096GX",
+    "type": "LONG_TERM_SICK",
+    "startDate": "2025-12-02",
+    "endDate": "2026-03-07"
+}
+
+### Update a pay status period
+
+// @no-log
+PATCH {{ baseUrl }}/pay-status-periods/019b9e84-de01-7939-859e-e72af57bd7f1
+Authorization: Bearer {{$auth.token("ui-auth-token")}}
+Content-Type: application/json
+
+{
+    "xendDate": "2026-11-30",
+    "removeEndDate": true
+}
+
+
