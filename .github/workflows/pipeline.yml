@@ -39,11 +39,21 @@ jobs:
     secrets: inherit
     with:
       environment: ${{ matrix.environments }}
-  kotlin_validate:
-    name: Validate the kotlin
+  app_version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.app_version.outputs.version }}
+    steps:
+      - id: app_version
+        name: Application version creators
+        uses: ministryofjustice/hmpps-github-actions/.github/actions/build-test-and-deploy/create_app_version@v2 # WORKFLOW_VERSION
+  gradle_verify:
+    name: Validate the kotlin build
     uses: ministryofjustice/hmpps-github-actions/.github/workflows/gradle_localstack_postgres_verify.yml@v2 # WORKFLOW_VERSION
     secrets: inherit
     with:
+      gradle-command: 'BUILD_NUMBER=${{ needs.app_version.outputs.version}} ./gradlew assemble check'
+      upload-build-artifacts: ${{ github.ref == 'refs/heads/main' }}
       java-version: "25"
       postgres-tag: "18"
       postgres-db: prisoner-pay
@@ -51,18 +61,21 @@ jobs:
       postgres-password: prisoner-pay
       postgres-port: "15444:5432"
       localstack-services: sqs
+    needs:
+      - app_version
   build:
     name: Build docker image from hmpps-github-actions
     if: github.ref == 'refs/heads/main'
     uses: ministryofjustice/hmpps-github-actions/.github/workflows/docker_build.yml@v2 # WORKFLOW_VERSION
     needs:
-      - kotlin_validate
+      - gradle_verify
     with:
       docker_registry: 'ghcr.io'
       registry_org: 'ministryofjustice'
       additional_docker_tag: ${{ inputs.additional_docker_tag }}
       push: ${{ inputs.push || inputs.push == null }}
       docker_multiplatform: false
+      download_build_artifacts: true
   deploy_dev:
     name: Deploy to the development environment
     if: github.ref == 'refs/heads/main'
