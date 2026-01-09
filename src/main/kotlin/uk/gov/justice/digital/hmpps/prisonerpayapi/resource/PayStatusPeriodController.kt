@@ -47,7 +47,7 @@ class PayStatusPeriodController(
       ApiResponse(
         responseCode = "200",
         description = "Returns the prisoner status period",
-        content = [Content(mediaType = "application/json", array = ArraySchema(schema = Schema(implementation = PayStatusPeriod::class)))],
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = PayStatusPeriod::class))],
       ),
       ApiResponse(
         responseCode = "400",
