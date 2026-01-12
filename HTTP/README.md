@@ -11,6 +11,12 @@ Create a file called `http-client.private.env.json` like this:
     "orchestrator-client-secret": "<<orchestrator-client-secret>>",
     "ui-client-id": "<<ui-client-id>>",
     "ui-client-secret": "<<ui-client-secret>>"
+  },
+  "dev": {
+    "orchestrator-client-id": "<<orchestrator-client-id>>",
+    "orchestrator-client-secret": "<<orchestrator-client-secret>>",
+    "ui-client-id": "<<ui-client-id>>",
+    "ui-client-secret": "<<ui-client-secret>>"
   }
 }
 ```
