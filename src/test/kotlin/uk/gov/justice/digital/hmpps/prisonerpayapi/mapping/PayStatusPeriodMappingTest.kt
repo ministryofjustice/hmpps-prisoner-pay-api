@@ -20,7 +20,7 @@ class PayStatusPeriodMappingTest {
   fun `should map from entity to dto`() {
     val entity = Entity(
       id = UUID.randomUUID(),
-      prisonCode = "PVI",
+      prisonCode = "RSI",
       prisonerNumber = "A1234AA",
       type = PayStatusType.LONG_TERM_SICK,
       startDate = LocalDate.now(),

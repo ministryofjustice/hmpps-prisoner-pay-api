@@ -19,4 +19,15 @@ interface PayStatusPeriodRepository : JpaRepository<PayStatusPeriod, UUID> {
   """,
   )
   fun search(latestStartDate: LocalDate, activeOnly: Boolean, prisonCode: String? = null): List<PayStatusPeriod>
+
+  @Query(
+    """
+      select psp from PayStatusPeriod psp 
+      where psp.prisonCode = :prisonCode
+      and psp.startDate <= :date
+      and (psp.endDate is null or psp.endDate >= :date)
+      order by psp.prisonerNumber
+    """,
+  )
+  fun findByPrisonCodeAndDate(prisonCode: String, date: LocalDate): List<PayStatusPeriod>
 }

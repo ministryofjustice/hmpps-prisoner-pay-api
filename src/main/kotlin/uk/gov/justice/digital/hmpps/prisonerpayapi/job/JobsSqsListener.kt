@@ -11,7 +11,7 @@ import java.util.*
 
 @Service
 class JobsSqsListener(
-  private val makePaymentsService: MakePaymentsService,
+  private val makePaymentsJobHandler: MakePaymentsJobHandler,
   private val mapper: ObjectMapper,
 ) {
   companion object {
@@ -26,7 +26,7 @@ class JobsSqsListener(
 
     when (sqsMessage.eventType) {
       MAKE_PAYMENTS -> {
-        makePaymentsService.handleEvent(sqsMessage.jobBatchId, sqsMessage.jobStartDateTime, toPrisonCode(sqsMessage))
+        makePaymentsJobHandler.handleEvent(sqsMessage.jobBatchId, sqsMessage.jobStartDateTime, toPrisonCode(sqsMessage))
       }
     }
   }

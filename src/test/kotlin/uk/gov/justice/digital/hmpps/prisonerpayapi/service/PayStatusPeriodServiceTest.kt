@@ -98,9 +98,9 @@ class PayStatusPeriodServiceTest {
 
     whenever(repository.search(any(), any(), any())).thenReturn(expectedEntities)
 
-    val results = payStatusPeriodService.search(LocalDate.of(2025, 7, 23), true, "PVI")
+    val results = payStatusPeriodService.search(LocalDate.of(2025, 7, 23), true, "RSI")
 
-    verify(repository).search(LocalDate.of(2025, 7, 23), true, "PVI")
+    verify(repository).search(LocalDate.of(2025, 7, 23), true, "RSI")
 
     assertThat(results).usingRecursiveComparison().isEqualTo(expectedEntities.map { it.toModel() })
   }

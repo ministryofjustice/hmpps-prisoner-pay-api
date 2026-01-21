@@ -12,7 +12,7 @@ internal val UUID1 = UUID.fromString("11111111-1111-1111-1111-111111111111")
 
 internal fun payStatusPeriod(
   id: UUID? = UUID1,
-  prisonCode: String = "PVI",
+  prisonCode: String = "RSI",
   prisonerNumber: String = "A1111AA",
   type: PayStatusType = PayStatusType.LONG_TERM_SICK,
   startDate: LocalDate = today(),
@@ -31,7 +31,7 @@ internal fun payStatusPeriod(
 )
 
 internal fun createPayStatusPeriodRequest(
-  prisonCode: String = "PVI",
+  prisonCode: String = "RSI",
   prisonerNumber: String = "A1111AA",
   type: PayStatusType = PayStatusType.LONG_TERM_SICK,
   startDate: LocalDate = today(),

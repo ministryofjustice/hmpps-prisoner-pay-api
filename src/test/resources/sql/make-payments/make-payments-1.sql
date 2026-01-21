@@ -1,0 +1,2 @@
+insert into pay_status_period(prisoner_number, type, start_date, end_date, created_date_time, created_by, prison_code) values
+    ('A1111AA', 'LONG_TERM_SICK', '2025-01-01', null, now(), 'USER1', 'RSI');
