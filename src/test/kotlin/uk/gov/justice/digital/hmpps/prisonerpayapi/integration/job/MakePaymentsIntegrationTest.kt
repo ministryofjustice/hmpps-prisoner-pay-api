@@ -37,7 +37,7 @@ class MakePaymentsIntegrationTest : IntegrationTestBase() {
   @Test
   @Sql("classpath:sql/make-payments/make-payments-1.sql")
   fun `should make payments`() {
-    whenever(clock.instant()).thenReturn(Instant.parse("2025-01-26T02:00:00.00Z"))
+    whenever(clock.instant()).thenReturn(Instant.parse("2026-01-21T02:00:00.00Z"))
 
     initiateJob(JobType.MAKE_PAYMENTS.name).expectStatus().isOk
 

@@ -3,9 +3,9 @@ package uk.gov.justice.digital.hmpps.prisonerpayapi.service.payment
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import uk.gov.justice.digital.hmpps.prisonerpayapi.common.today
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPeriodRepository
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PaymentRepository
+import java.time.Clock
 import java.time.LocalDate
 
 @Service
@@ -14,6 +14,7 @@ class PaymentService(
   private val paymentRepository: PaymentRepository,
   private val specialPaymentsService: SpecialPaymentsService,
   private val paymentIssuer: PaymentIssuer,
+  private val clock: Clock,
   @Value($$"${prisoner.pay.api.make.payments.days.back:7}") val daysBack: Long,
 ) {
   companion object {
@@ -21,13 +22,14 @@ class PaymentService(
   }
 
   fun processPayments(prisonCode: String) {
-    val startDate = LocalDate.now().minusDays(daysBack)
+    val today = LocalDate.now(clock)
+    val startDate = today.minusDays(daysBack)
     val endDate = startDate
 
     log.debug("Determining payments due for {} between {} and {}", prisonCode, startDate, endDate)
 
     // For each day in the last n days prior to today...
-    startDate.datesUntil(today()).forEach { date ->
+    startDate.datesUntil(today).forEach { date ->
       // Get prisoners due special payments
       val payStatusPeriodsByPrisonerNumber = payStatusPeriodRepository.findByPrisonCodeAndDate(prisonCode, date).groupBy { it.prisonerNumber }
 
