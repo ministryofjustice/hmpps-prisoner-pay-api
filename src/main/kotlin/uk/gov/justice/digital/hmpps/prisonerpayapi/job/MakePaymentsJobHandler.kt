@@ -2,13 +2,15 @@ package uk.gov.justice.digital.hmpps.prisonerpayapi.job
 
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerpayapi.service.payment.PaymentService
 import java.time.Clock
 import java.time.LocalDateTime
 import java.util.*
 
 @Service
-class MakePaymentsService(
+class MakePaymentsJobHandler(
   private val jobsSqsService: JobsSqsService,
+  private val paymentService: PaymentService,
   private val clock: Clock,
 ) : JobHandler {
   companion object {
@@ -19,7 +21,7 @@ class MakePaymentsService(
 
   override fun execute() {
     // TODO: Will change to determine which prisons to make payments for
-    val prisons = listOf("PVI", "RSI")
+    val prisons = listOf("BCI", "RSI")
 
     log.info("Sending make payments events for ${prisons.count()} prisons")
 
@@ -39,7 +41,8 @@ class MakePaymentsService(
   }
 
   fun handleEvent(jobBatchId: UUID, jobStartDateTime: LocalDateTime, prisonCode: String) {
-    // TODO: Add a facade until we can call a physical service
     log.debug("Handling event for make payments for {}, {}, {}", jobBatchId, jobStartDateTime, prisonCode)
+
+    paymentService.processPayments(prisonCode)
   }
 }

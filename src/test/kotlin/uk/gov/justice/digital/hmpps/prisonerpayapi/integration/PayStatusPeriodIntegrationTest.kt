@@ -158,7 +158,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
     )
 
     val request6 = createPayStatusPeriodRequest(
-      prisonCode = "RSI",
+      prisonCode = "PVI",
       prisonerNumber = "F6666FF",
       startDate = today(),
       endDate = today().plusDays(10),
@@ -197,13 +197,13 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return active pay status periods for a prison`() {
-      val response = searchPayStatusPeriods(today(), prisonCode = "PVI").successList<PayStatusPeriod>()
+      val response = searchPayStatusPeriods(today(), prisonCode = "RSI").successList<PayStatusPeriod>()
 
       assertThat(response).hasSize(3)
 
       response.forEach {
         assertThat(it.id).isNotNull
-        assertThat(it.prisonCode).isEqualTo("PVI")
+        assertThat(it.prisonCode).isEqualTo("RSI")
         assertThat(it.type).isEqualTo(PayStatusType.LONG_TERM_SICK)
         assertThat(it.createdBy).isEqualTo(USERNAME)
         assertThat(it.createdDateTime).isCloseTo(now(), within(1, ChronoUnit.SECONDS))

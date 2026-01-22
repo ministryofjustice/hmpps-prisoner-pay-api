@@ -1,6 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerpayapi.integration
 
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT
@@ -10,6 +12,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.web.reactive.server.WebTestClient
 import uk.gov.justice.digital.hmpps.prisonerpayapi.integration.config.LocalStackContainer
@@ -18,7 +21,11 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.integration.config.PostgresCo
 import uk.gov.justice.digital.hmpps.prisonerpayapi.integration.wiremock.HmppsAuthApiExtension
 import uk.gov.justice.digital.hmpps.prisonerpayapi.integration.wiremock.HmppsAuthApiExtension.Companion.hmppsAuth
 import uk.gov.justice.hmpps.kotlin.common.ErrorResponse
+import uk.gov.justice.hmpps.sqs.HmppsQueueService
 import uk.gov.justice.hmpps.test.kotlin.auth.JwtAuthorisationHelper
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneId
 
 internal const val USERNAME = "TestUser"
 
@@ -34,6 +41,12 @@ abstract class IntegrationTestBase {
   @Autowired
   protected lateinit var jwtAuthHelper: JwtAuthorisationHelper
 
+  @Autowired
+  protected lateinit var hmppsQueueService: HmppsQueueService
+
+  @MockitoBean
+  protected lateinit var clock: Clock
+
   companion object {
     internal val db = PostgresContainer.instance
     internal val localstack = LocalStackContainer.instance
@@ -48,6 +61,12 @@ abstract class IntegrationTestBase {
       }
       localstack?.also { setLocalStackProperties(it, registry) }
     }
+  }
+
+  @BeforeEach
+  fun setup() {
+    whenever(clock.instant()).thenReturn(Instant.now())
+    whenever(clock.zone).thenReturn(ZoneId.of("Europe/London"))
   }
 
   internal fun setAuthorisation(

@@ -9,9 +9,9 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.UUID1
 import java.time.LocalDateTime
 
 class JobsSqsListenerTest {
-  val makePaymentsService: MakePaymentsService = mock()
+  val makePaymentsJobHandler: MakePaymentsJobHandler = mock()
   val mapper = jacksonObjectMapper().registerModule(JavaTimeModule())
-  val listener = JobsSqsListener(makePaymentsService, mapper)
+  val listener = JobsSqsListener(makePaymentsJobHandler, mapper)
 
   @Test
   fun `should handle MAKE_PAYMENTS event`() {
@@ -30,6 +30,6 @@ class JobsSqsListenerTest {
 
     listener.onMessage(rawMessage)
 
-    verify(makePaymentsService).handleEvent(UUID1, now, "RSI")
+    verify(makePaymentsJobHandler).handleEvent(UUID1, now, "RSI")
   }
 }

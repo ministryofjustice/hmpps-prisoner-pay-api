@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity
 
-enum class PayStatusType {
-  LONG_TERM_SICK,
+import uk.gov.justice.digital.hmpps.prisonerpayapi.common.PaymentType
+
+enum class PayStatusType(val paymentType: PaymentType) {
+  LONG_TERM_SICK(PaymentType.LONG_TERM_SICK),
 }
