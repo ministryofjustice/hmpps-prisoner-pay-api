@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.yesterday
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.Payment
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPeriodRepository
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PaymentRepository
+import java.time.Clock
 import java.time.LocalDateTime
 
 class PaymentServiceTest {
@@ -23,8 +24,9 @@ class PaymentServiceTest {
   val paymentRepository: PaymentRepository = mock()
   val specialPaymentsService: SpecialPaymentsService = mock()
   val paymentIssuer: PaymentIssuer = mock()
+  val clock = Clock.systemDefaultZone()
 
-  val paymentService = PaymentService(payStatusPeriodRepository, paymentRepository, specialPaymentsService, paymentIssuer, 2)
+  val paymentService = PaymentService(payStatusPeriodRepository, paymentRepository, specialPaymentsService, paymentIssuer, clock, 2)
 
   val paymentCaptor = argumentCaptor<Payment>()
 
