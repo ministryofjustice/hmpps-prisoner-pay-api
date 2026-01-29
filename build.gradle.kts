@@ -17,7 +17,7 @@ dependencies {
   implementation("aws.sdk.kotlin:s3:1.6.5")
 
   runtimeOnly("org.postgresql:postgresql")
-  runtimeOnly("org.flywaydb:flyway-database-postgresql:11.20.3")
+  runtimeOnly("org.flywaydb:flyway-database-postgresql:12.0.0")
 
   testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:2.0.0")
   testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
