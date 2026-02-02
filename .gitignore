@@ -77,3 +77,7 @@ sonar-project.properties
 
 #Everything else:
 .DS_Store
+volume/
+
+# env file
+.env

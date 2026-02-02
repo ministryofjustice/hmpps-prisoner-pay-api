@@ -46,4 +46,8 @@ Content-Type: application/json
     "removeEndDate": true
 }
 
+### Get a list of long term sick pay rates
 
+// @no-log
+GET {{ baseUrl }}/pay-rates/long-term-sick
+Authorization: Bearer {{$auth.token("orchestrator-auth-token")}}
