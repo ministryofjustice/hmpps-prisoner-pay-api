@@ -60,6 +60,7 @@ jobs:
       postgres-db: prisoner-pay
       postgres-username: prisoner-pay
       postgres-password: prisoner-pay
+      postgres-port: "15444:5432"
       localstack-tag: 4
       localstack-services: sqs
     needs:
