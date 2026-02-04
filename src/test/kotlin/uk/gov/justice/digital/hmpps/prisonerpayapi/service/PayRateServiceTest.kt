@@ -42,12 +42,18 @@ class PayRateServiceTest {
 
     verify(payRateRepository).getCurrentAndFuturePayRatesByPrisonCode(prisonCode)
 
-    assertThat(result).hasSize(3)
-    assertThat(result.map { it.prisonCode }).containsOnly("RSI")
-    assertThat(result.map { it.startDate }).containsExactly(LocalDate.of(2026, 2, 1), LocalDate.of(2026, 3, 1), LocalDate.of(2026, 4, 1))
-    assertThat(result.map { it.rate }).containsExactly(60, 80, 90)
-    assertThat(result.map { it.createdBy }).containsOnly("TEST_USER")
-    assertThat(result.map { it.createdDateTime.toString() }).containsOnly("2026-01-01T10:00")
+    with(result) {
+      assertThat(this).hasSize(3)
+      assertThat(map { it.prisonCode }).containsOnly("RSI")
+      assertThat(map { it.startDate }).containsExactly(
+        LocalDate.of(2026, 2, 1),
+        LocalDate.of(2026, 3, 1),
+        LocalDate.of(2026, 4, 1),
+      )
+      assertThat(map { it.rate }).containsExactly(60, 80, 90)
+      assertThat(map { it.createdBy }).containsOnly("TEST_USER")
+      assertThat(map { it.createdDateTime.toString() }).containsOnly("2026-01-01T10:00")
+    }
   }
 
   @Test
