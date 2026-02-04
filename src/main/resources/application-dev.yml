@@ -1,6 +1,2 @@
 hmpps-auth:
   url: "http://localhost:8090/auth"
-
-spring:
-  flyway:
-    locations: classpath:/db.migrations/common,classpath:/db.migrations/dev
