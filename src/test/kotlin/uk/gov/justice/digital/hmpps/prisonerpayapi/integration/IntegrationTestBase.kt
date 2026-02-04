@@ -14,6 +14,7 @@ import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.context.jdbc.Sql
+import org.springframework.test.context.jdbc.SqlMergeMode
 import org.springframework.test.web.reactive.server.WebTestClient
 import uk.gov.justice.digital.hmpps.prisonerpayapi.integration.config.LocalStackContainer
 import uk.gov.justice.digital.hmpps.prisonerpayapi.integration.config.LocalStackContainer.setLocalStackProperties
@@ -28,7 +29,9 @@ import java.time.Instant
 import java.time.ZoneId
 
 internal const val USERNAME = "TestUser"
+internal const val prisonCode = "RSI"
 
+@SqlMergeMode(SqlMergeMode.MergeMode.MERGE)
 @ExtendWith(HmppsAuthApiExtension::class)
 @SpringBootTest(webEnvironment = RANDOM_PORT)
 @ActiveProfiles("test")

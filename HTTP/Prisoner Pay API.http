@@ -49,5 +49,5 @@ Content-Type: application/json
 ### Get a list of long term sick pay rates
 
 // @no-log
-GET {{ baseUrl }}/pay-rates/long-term-sick
+GET {{ baseUrl }}/pay-rates/prison/RSI
 Authorization: Bearer {{$auth.token("orchestrator-auth-token")}}

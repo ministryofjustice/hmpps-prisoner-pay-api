@@ -7,7 +7,7 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayRate
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 class PayRateMappingTest {
 

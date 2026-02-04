@@ -13,40 +13,50 @@ class PayRateServiceTest {
   private val payRateRepository: PayRateRepository = mock()
   private val payRateService = PayRateService(payRateRepository)
 
+  private val prisonCode = "RSI"
+
   @Test
-  fun `should return currently active and future long term sick pay rates`() {
-    val expectedEntities = listOf(
+  fun `should return currently active and future pay rates for a given prison`() {
+    val payRates = listOf(
       payRate(
-        prisonCode = "BCI",
-        startDate = LocalDate.of(2026, 1, 25),
+        prisonCode = "RSI",
+        startDate = LocalDate.of(2026, 2, 1),
         rate = 60,
       ),
       payRate(
         prisonCode = "RSI",
-        startDate = LocalDate.of(2026, 1, 10),
+        startDate = LocalDate.of(2026, 3, 1),
         rate = 80,
+      ),
+      payRate(
+        prisonCode = "RSI",
+        startDate = LocalDate.of(2026, 4, 1),
+        rate = 90,
       ),
     )
 
-    whenever(payRateRepository.findCurrentAndFutureLongTermSickPayRates()).thenReturn(expectedEntities)
+    whenever(payRateRepository.getCurrentAndFuturePayRatesByPrisonCode(prisonCode))
+      .thenReturn(payRates)
 
-    val result = payRateService.getLongTermSickPayRates()
+    val result = payRateService.getCurrentAndFuturePayRatesByPrisonCode(prisonCode)
 
-    verify(payRateRepository).findCurrentAndFutureLongTermSickPayRates()
+    verify(payRateRepository).getCurrentAndFuturePayRatesByPrisonCode(prisonCode)
 
-    assertThat(result).hasSize(2)
-    assertThat(result.map { it.prisonCode }).containsExactly("BCI", "RSI")
-    assertThat(result.map { it.startDate }).containsExactly(LocalDate.of(2026, 1, 25), LocalDate.of(2026, 1, 10))
-    assertThat(result.map { it.rate }).containsExactly(60, 80)
+    assertThat(result).hasSize(3)
+    assertThat(result.map { it.prisonCode }).containsOnly("RSI")
+    assertThat(result.map { it.startDate }).containsExactly(LocalDate.of(2026, 2, 1), LocalDate.of(2026, 3, 1), LocalDate.of(2026, 4, 1))
+    assertThat(result.map { it.rate }).containsExactly(60, 80, 90)
+    assertThat(result.map { it.createdBy }).containsOnly("TEST_USER")
+    assertThat(result.map { it.createdDateTime.toString() }).containsOnly("2026-01-01T10:00")
   }
 
   @Test
-  fun `should return empty list when no long term sick pay rates exist`() {
-    whenever(payRateRepository.findCurrentAndFutureLongTermSickPayRates()).thenReturn(emptyList())
+  fun `should return empty list when no pay rates exist`() {
+    whenever(payRateRepository.getCurrentAndFuturePayRatesByPrisonCode(prisonCode)).thenReturn(emptyList())
 
-    val result = payRateService.getLongTermSickPayRates()
+    val result = payRateService.getCurrentAndFuturePayRatesByPrisonCode(prisonCode)
 
-    verify(payRateRepository).findCurrentAndFutureLongTermSickPayRates()
+    verify(payRateRepository).getCurrentAndFuturePayRatesByPrisonCode(prisonCode)
     assertThat(result).isEmpty()
   }
 }
