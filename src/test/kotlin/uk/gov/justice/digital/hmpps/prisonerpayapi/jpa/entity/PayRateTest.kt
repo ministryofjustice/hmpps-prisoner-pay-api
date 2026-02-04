@@ -17,7 +17,7 @@ class PayRateTest {
       startDate = expectedStartDate,
       rate = 90,
       createdBy = "TEST_USER",
-      createdDateTime = expectedCreatedDateTime
+      createdDateTime = expectedCreatedDateTime,
     )
 
     with(payRate) {
