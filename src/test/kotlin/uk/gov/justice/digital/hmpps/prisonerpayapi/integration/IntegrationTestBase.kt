@@ -29,7 +29,6 @@ import java.time.Instant
 import java.time.ZoneId
 
 internal const val USERNAME = "TestUser"
-internal const val PRISONCODE = "RSI"
 
 @SqlMergeMode(SqlMergeMode.MergeMode.MERGE)
 @ExtendWith(HmppsAuthApiExtension::class)

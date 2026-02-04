@@ -6,6 +6,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 
+const val RISLEY_PRISON_CODE = "RSI"
+
 internal fun payRate(
   id: UUID? = UUID.randomUUID(),
   prisonCode: String = "RSI",

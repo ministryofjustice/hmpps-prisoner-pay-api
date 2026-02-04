@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.jdbc.Sql
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.response.PayRateDto
+import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.RISLEY_PRISON_CODE
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import java.time.LocalDate
 
@@ -35,7 +36,7 @@ class PayRateIntegrationTest : IntegrationTestBase() {
     @Test
     @Sql("classpath:sql/pay-rates/pay-rates-with-start-dates-only-in-future.sql")
     fun `should return only future pay rates when no past pay rates exist`() {
-      getCurrentAndFuturePayRates(prisonCode = PRISONCODE).successList<PayRateDto>().let {
+      getCurrentAndFuturePayRates(prisonCode = RISLEY_PRISON_CODE).successList<PayRateDto>().let {
         assertThat(it).hasSize(3)
         assertThat(it.map { it.prisonCode }).containsOnly("RSI")
         assertThat(it.map { it.startDate }).containsExactly(
@@ -52,7 +53,7 @@ class PayRateIntegrationTest : IntegrationTestBase() {
     @Test
     @Sql("classpath:sql/pay-rates/pay-rates-with-start-dates-only-in-past.sql")
     fun `should return latest past pay rate when no future pay rates exist`() {
-      getCurrentAndFuturePayRates(prisonCode = PRISONCODE).successList<PayRateDto>().let {
+      getCurrentAndFuturePayRates(prisonCode = RISLEY_PRISON_CODE).successList<PayRateDto>().let {
         assertThat(it).hasSize(1)
         assertThat(it.map { it.prisonCode }).containsOnly("RSI")
         assertThat(it.map { it.startDate }).containsOnly(
@@ -67,7 +68,7 @@ class PayRateIntegrationTest : IntegrationTestBase() {
     @Test
     @Sql("classpath:sql/pay-rates/pay-rates-with-start-dates-in-past-today-and-future.sql")
     fun `should return current (today’s) and future pay rates when past, current, and future pay rates exist`() {
-      getCurrentAndFuturePayRates(prisonCode = PRISONCODE).successList<PayRateDto>().let {
+      getCurrentAndFuturePayRates(prisonCode = RISLEY_PRISON_CODE).successList<PayRateDto>().let {
         assertThat(it).hasSize(2)
         assertThat(it.map { it.prisonCode }).containsOnly("RSI")
         assertThat(it.map { it.startDate }).containsExactly(
@@ -82,17 +83,17 @@ class PayRateIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return empty list when no past, current or future pay rates exist`() {
-      assertThat(getCurrentAndFuturePayRates(prisonCode = PRISONCODE).successList<PayRateDto>()).isEmpty()
+      assertThat(getCurrentAndFuturePayRates(prisonCode = RISLEY_PRISON_CODE).successList<PayRateDto>()).isEmpty()
     }
 
     @Test
     fun `returns unauthorized when no bearer token`() {
-      getCurrentAndFuturePayRates(includeBearerAuth = false, prisonCode = PRISONCODE).fail(HttpStatus.UNAUTHORIZED)
+      getCurrentAndFuturePayRates(includeBearerAuth = false, prisonCode = RISLEY_PRISON_CODE).fail(HttpStatus.UNAUTHORIZED)
     }
 
     @Test
     fun `returns forbidden when role is incorrect`() {
-      getCurrentAndFuturePayRates(roles = listOf("ROLE_NO_PERMISSIONS"), prisonCode = PRISONCODE).fail(HttpStatus.FORBIDDEN)
+      getCurrentAndFuturePayRates(roles = listOf("ROLE_NO_PERMISSIONS"), prisonCode = RISLEY_PRISON_CODE).fail(HttpStatus.FORBIDDEN)
     }
   }
 
