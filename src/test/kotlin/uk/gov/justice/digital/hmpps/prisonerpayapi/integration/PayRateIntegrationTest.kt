@@ -14,7 +14,6 @@ import java.time.LocalDate
 class PayRateIntegrationTest : IntegrationTestBase() {
   @Nested
   @DisplayName("Get pay rates")
-
   inner class GetPayRates {
     @Test
     @Sql("classpath:sql/pay-rates/pay-rates-with-start-dates-in-past-and-future.sql")
@@ -25,7 +24,7 @@ class PayRateIntegrationTest : IntegrationTestBase() {
         assertThat(it.map { it.startDate }).containsExactly(
           LocalDate.of(2026, 1, 15),
           LocalDate.of(2026, 2, 10),
-          LocalDate.of(2026, 2, 20)
+          LocalDate.of(2026, 2, 20),
         )
         assertThat(it.map { it.rate }).containsExactly(100, 80, 110)
         assertThat(it.map { it.type }).containsOnly(PayStatusType.LONG_TERM_SICK)
@@ -36,13 +35,13 @@ class PayRateIntegrationTest : IntegrationTestBase() {
     @Test
     @Sql("classpath:sql/pay-rates/pay-rates-with-start-dates-only-in-future.sql")
     fun `should return only future pay rates when no past pay rates exist`() {
-      getCurrentAndFuturePayRates(prisonCode = prisonCode).successList<PayRateDto>().let {
+      getCurrentAndFuturePayRates(prisonCode = PRISONCODE).successList<PayRateDto>().let {
         assertThat(it).hasSize(3)
         assertThat(it.map { it.prisonCode }).containsOnly("RSI")
         assertThat(it.map { it.startDate }).containsExactly(
           LocalDate.of(2026, 2, 20),
           LocalDate.of(2026, 2, 26),
-          LocalDate.of(2026, 3, 10)
+          LocalDate.of(2026, 3, 10),
         )
         assertThat(it.map { it.rate }).containsExactly(75, 65, 99)
         assertThat(it.map { it.type }).containsOnly(PayStatusType.LONG_TERM_SICK)
@@ -53,7 +52,7 @@ class PayRateIntegrationTest : IntegrationTestBase() {
     @Test
     @Sql("classpath:sql/pay-rates/pay-rates-with-start-dates-only-in-past.sql")
     fun `should return latest past pay rate when no future pay rates exist`() {
-      getCurrentAndFuturePayRates(prisonCode = prisonCode).successList<PayRateDto>().let {
+      getCurrentAndFuturePayRates(prisonCode = PRISONCODE).successList<PayRateDto>().let {
         assertThat(it).hasSize(1)
         assertThat(it.map { it.prisonCode }).containsOnly("RSI")
         assertThat(it.map { it.startDate }).containsOnly(
@@ -68,7 +67,7 @@ class PayRateIntegrationTest : IntegrationTestBase() {
     @Test
     @Sql("classpath:sql/pay-rates/pay-rates-with-start-dates-in-past-today-and-future.sql")
     fun `should return current (today’s) and future pay rates when past, current, and future pay rates exist`() {
-      getCurrentAndFuturePayRates(prisonCode = prisonCode).successList<PayRateDto>().let {
+      getCurrentAndFuturePayRates(prisonCode = PRISONCODE).successList<PayRateDto>().let {
         assertThat(it).hasSize(2)
         assertThat(it.map { it.prisonCode }).containsOnly("RSI")
         assertThat(it.map { it.startDate }).containsExactly(
@@ -83,17 +82,17 @@ class PayRateIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return empty list when no past, current or future pay rates exist`() {
-      assertThat(getCurrentAndFuturePayRates(prisonCode = prisonCode).successList<PayRateDto>()).isEmpty()
+      assertThat(getCurrentAndFuturePayRates(prisonCode = PRISONCODE).successList<PayRateDto>()).isEmpty()
     }
 
     @Test
     fun `returns unauthorized when no bearer token`() {
-      getCurrentAndFuturePayRates(includeBearerAuth = false, prisonCode = prisonCode).fail(HttpStatus.UNAUTHORIZED)
+      getCurrentAndFuturePayRates(includeBearerAuth = false, prisonCode = PRISONCODE).fail(HttpStatus.UNAUTHORIZED)
     }
 
     @Test
     fun `returns forbidden when role is incorrect`() {
-      getCurrentAndFuturePayRates(roles = listOf("ROLE_NO_PERMISSIONS"), prisonCode = prisonCode).fail(HttpStatus.FORBIDDEN)
+      getCurrentAndFuturePayRates(roles = listOf("ROLE_NO_PERMISSIONS"), prisonCode = PRISONCODE).fail(HttpStatus.FORBIDDEN)
     }
   }
 
