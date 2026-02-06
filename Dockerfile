@@ -7,6 +7,9 @@ RUN java -Djarmode=tools -jar app.jar extract --layers --destination extracted
 
 FROM ${BASE_IMAGE}
 
+ARG BUILD_NUMBER
+ENV BUILD_NUMBER=${BUILD_NUMBER:-1_0_0}
+
 WORKDIR /app
 COPY --chown=appuser:appgroup applicationinsights.json ./
 COPY --chown=appuser:appgroup applicationinsights.dev.json ./
