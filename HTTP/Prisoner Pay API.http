@@ -46,4 +46,8 @@ Content-Type: application/json
     "removeEndDate": true
 }
 
+### Get a list of pay rates for a given prison
 
+// @no-log
+GET {{ baseUrl }}/pay-rates/prison/RSI
+Authorization: Bearer {{$auth.token("orchestrator-auth-token")}}
