@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayRate
+import java.time.LocalDate
 import java.util.*
 
 @Repository
@@ -27,4 +28,20 @@ interface PayRateRepository : JpaRepository<PayRate, UUID> {
 """,
   )
   fun getCurrentAndFuturePayRatesByPrisonCode(prisonCode: String): List<PayRate>
+
+  @Query(
+    """
+      select pr from PayRate pr
+      where pr.prisonCode = :prisonCode
+      and pr.startDate <= :date
+      and pr.startDate = (
+        select max(pr2.startDate) 
+        from PayRate pr2 
+        where pr2.prisonCode = pr.prisonCode 
+        and pr2.startDate <= :date
+        and pr2.type = pr.type
+      )
+    """,
+  )
+  fun findActivePayRates(prisonCode: String, date: LocalDate): List<PayRate>
 }
