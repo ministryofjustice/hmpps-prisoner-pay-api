@@ -15,19 +15,19 @@ interface PayRateRepository : JpaRepository<PayRate, UUID> {
     select pr from PayRate pr
     where pr.prisonCode = :prisonCode
     and (
-        pr.startDate > current_date()
+        pr.startDate > :date
         or pr.startDate = (
             select max(pr2.startDate)
             from PayRate pr2
             where pr2.prisonCode = pr.prisonCode
             and pr2.type = pr.type
-            and pr2.startDate <= current_date()
+            and pr2.startDate <= :date
         )
     )
     order by pr.type, pr.startDate
 """,
   )
-  fun getCurrentAndFuturePayRatesByPrisonCode(prisonCode: String): List<PayRate>
+  fun getCurrentAndFuturePayRatesByPrisonCode(prisonCode: String, date: LocalDate): List<PayRate>
 
   @Query(
     """
