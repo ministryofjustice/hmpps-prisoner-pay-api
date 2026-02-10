@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerpayapi.service.payment
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayRateRepository
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPeriodRepository
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PaymentRepository
 import java.time.Clock
@@ -12,6 +13,7 @@ import java.time.LocalDate
 class PaymentService(
   private val payStatusPeriodRepository: PayStatusPeriodRepository,
   private val paymentRepository: PaymentRepository,
+  private val payRateRepository: PayRateRepository,
   private val specialPaymentsService: SpecialPaymentsService,
   private val paymentIssuer: PaymentIssuer,
   private val clock: Clock,
@@ -24,9 +26,9 @@ class PaymentService(
   fun processPayments(prisonCode: String) {
     val today = LocalDate.now(clock)
     val startDate = today.minusDays(daysBack)
-    val endDate = startDate
+    val yesterday = today.minusDays(1)
 
-    log.debug("Determining payments due for {} between {} and {}", prisonCode, startDate, endDate)
+    log.debug("Determining payments due for {} between {} and {}", prisonCode, startDate, yesterday)
 
     // For each day in the last n days prior to today...
     startDate.datesUntil(today).forEach { date ->
@@ -40,6 +42,11 @@ class PaymentService(
 
       val allPrisonerNumbers = specialPayPrisonerNumbers + activityPrisonerNumbers
 
+      if (allPrisonerNumbers.isEmpty()) return@forEach
+
+      // Should be only a single pay rate per type so last wins
+      val payRates = payRateRepository.findActivePayRates(prisonCode, date).associateBy { item -> item.type }
+
       allPrisonerNumbers.forEach { prisonerNumber ->
         // TODO: Find any previous payments
         val oldSpecialPayments = paymentRepository.findPayments(prisonerNumber, date)
@@ -47,7 +54,7 @@ class PaymentService(
         // Calculate new special payments only if there weren't any previous ones
         val specialPayments = if (oldSpecialPayments.isEmpty()) {
           val payStatusPeriodForPrisoner = payStatusPeriodsByPrisonerNumber[prisonerNumber] ?: emptyList()
-          specialPaymentsService.calcPayments(date, payStatusPeriodForPrisoner)
+          specialPaymentsService.calcPayments(date, payStatusPeriodForPrisoner, payRates)
         } else {
           emptyList()
         }

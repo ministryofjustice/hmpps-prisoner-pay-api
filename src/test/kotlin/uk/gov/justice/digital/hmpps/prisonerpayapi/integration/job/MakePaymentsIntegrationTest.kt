@@ -44,29 +44,32 @@ class MakePaymentsIntegrationTest : IntegrationTestBase() {
     await untilAsserted {
       val paymentsMade = paymentRepository.findAll()
 
-      assertThat(paymentsMade).hasSize(10)
-
       paymentsMade.forEach { payment ->
         with(payment) {
           assertThat(prisonCode).isEqualTo("RSI")
-          assertThat(prisonerNumber).isEqualTo("A1111AA")
           assertThat(paymentType).isEqualTo(PaymentType.LONG_TERM_SICK)
           assertThat(paymentDateTime).isEqualTo(LocalDateTime.now(clock))
           assertThat(reference).hasSize(12)
         }
       }
 
-      assertThat(paymentsMade).extracting("eventDate", "timeSlot", "paymentAmount").contains(
-        Tuple(LocalDate.of(2026, 1, 14), TimeSlot.AM, 50),
-        Tuple(LocalDate.of(2026, 1, 14), TimeSlot.PM, 49),
-        Tuple(LocalDate.of(2026, 1, 15), TimeSlot.AM, 50),
-        Tuple(LocalDate.of(2026, 1, 15), TimeSlot.PM, 49),
-        Tuple(LocalDate.of(2026, 1, 15), TimeSlot.AM, 50),
-        Tuple(LocalDate.of(2026, 1, 16), TimeSlot.PM, 49),
-        Tuple(LocalDate.of(2026, 1, 19), TimeSlot.AM, 50),
-        Tuple(LocalDate.of(2026, 1, 19), TimeSlot.PM, 49),
-        Tuple(LocalDate.of(2026, 1, 20), TimeSlot.AM, 50),
-        Tuple(LocalDate.of(2026, 1, 20), TimeSlot.PM, 49),
+      assertThat(paymentsMade).extracting("eventDate", "prisonerNumber", "timeSlot", "paymentAmount").containsExactlyInAnyOrder(
+        Tuple(LocalDate.of(2026, 1, 14), "A1111AA", TimeSlot.AM, 60),
+        Tuple(LocalDate.of(2026, 1, 14), "A1111AA", TimeSlot.PM, 60),
+        Tuple(LocalDate.of(2026, 1, 14), "B2222BB", TimeSlot.AM, 60),
+        Tuple(LocalDate.of(2026, 1, 14), "B2222BB", TimeSlot.PM, 60),
+        Tuple(LocalDate.of(2026, 1, 15), "A1111AA", TimeSlot.AM, 60),
+        Tuple(LocalDate.of(2026, 1, 15), "A1111AA", TimeSlot.PM, 60),
+        Tuple(LocalDate.of(2026, 1, 15), "B2222BB", TimeSlot.AM, 60),
+        Tuple(LocalDate.of(2026, 1, 15), "B2222BB", TimeSlot.PM, 60),
+        Tuple(LocalDate.of(2026, 1, 16), "A1111AA", TimeSlot.AM, 70),
+        Tuple(LocalDate.of(2026, 1, 16), "A1111AA", TimeSlot.PM, 70),
+        Tuple(LocalDate.of(2026, 1, 16), "B2222BB", TimeSlot.AM, 70),
+        Tuple(LocalDate.of(2026, 1, 16), "B2222BB", TimeSlot.PM, 70),
+        Tuple(LocalDate.of(2026, 1, 19), "B2222BB", TimeSlot.AM, 70),
+        Tuple(LocalDate.of(2026, 1, 19), "B2222BB", TimeSlot.PM, 70),
+        Tuple(LocalDate.of(2026, 1, 20), "B2222BB", TimeSlot.AM, 70),
+        Tuple(LocalDate.of(2026, 1, 20), "B2222BB", TimeSlot.PM, 70),
       )
     }
   }
