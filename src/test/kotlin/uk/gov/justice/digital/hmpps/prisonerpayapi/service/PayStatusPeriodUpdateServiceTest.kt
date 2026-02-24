@@ -32,7 +32,7 @@ class PayStatusPeriodUpdateServiceTest {
 
     whenever(repository.findById(UUID1)).thenReturn(Optional.of(savedEntity))
 
-    whenever(repository.saveAndFlush(any())).thenReturn(savedEntity)
+    whenever(repository.saveAndFlush(any<PayStatusPeriod>())).thenReturn(savedEntity)
 
     val result = service.update(UUID1, UpdatePayStatusPeriodRequest(endDate = newEndDate))
 
@@ -49,7 +49,7 @@ class PayStatusPeriodUpdateServiceTest {
 
     whenever(repository.findById(UUID1)).thenReturn(Optional.of(savedEntity))
 
-    whenever(repository.saveAndFlush(any())).thenReturn(savedEntity)
+    whenever(repository.saveAndFlush(any<PayStatusPeriod>())).thenReturn(savedEntity)
 
     val result = service.update(UUID1, UpdatePayStatusPeriodRequest(removeEndDate = true))
 
