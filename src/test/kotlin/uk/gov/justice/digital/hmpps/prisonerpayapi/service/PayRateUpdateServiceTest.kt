@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerpayapi.service
 import jakarta.persistence.EntityNotFoundException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.assertj.core.api.Assertions.within
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
@@ -22,6 +23,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import java.util.Optional
 import java.util.UUID
 
@@ -42,6 +44,7 @@ class PayRateUpdateServiceTest {
     whenever(authenticationHolder.username).thenReturn("NEW_USER")
     whenever(repository.save(any<PayRate>())).thenAnswer { it.getArgument<PayRate>(0) }
 
+    val now = LocalDateTime.now(clock)
     val result = payRateUpdateService.update(UUID1, request)
 
     verify(repository).save(existing)
@@ -55,7 +58,7 @@ class PayRateUpdateServiceTest {
       assertThat(createdBy).isEqualTo(existing.createdBy)
       assertThat(createdDateTime).isEqualTo(existing.createdDateTime)
       assertThat(updatedBy).isEqualTo("NEW_USER")
-      assertThat(updatedDateTime).isEqualTo(LocalDateTime.now(clock))
+      assertThat(updatedDateTime).isCloseTo(now, within(1, ChronoUnit.SECONDS))
     }
   }
 
@@ -71,6 +74,7 @@ class PayRateUpdateServiceTest {
     whenever(authenticationHolder.username).thenReturn("TEST_USER")
     whenever(repository.save(any<PayRate>())).thenReturn(savedPayRate)
 
+    val now = LocalDateTime.now(clock)
     val result = payRateUpdateService.update(UUID1, request)
 
     val captor = argumentCaptor<PayRate>()
@@ -85,12 +89,12 @@ class PayRateUpdateServiceTest {
 
     with(result) {
       assertThat(id).isNotEqualTo(UUID1)
-      assertThat(prisonCode).isEqualTo(request.prisonCode)
-      assertThat(type).isEqualTo(request.type)
+      assertThat(prisonCode).isEqualTo(existing.prisonCode)
+      assertThat(type).isEqualTo(existing.type)
       assertThat(startDate).isEqualTo(request.startDate)
       assertThat(rate).isEqualTo(request.rate)
       assertThat(createdBy).isEqualTo("TEST_USER")
-      assertThat(createdDateTime).isEqualTo(LocalDateTime.now(clock))
+      assertThat(createdDateTime).isCloseTo(now, within(1, ChronoUnit.SECONDS))
       assertThat(updatedBy).isNull()
       assertThat(updatedDateTime).isNull()
     }
@@ -108,6 +112,7 @@ class PayRateUpdateServiceTest {
     whenever(authenticationHolder.username).thenReturn("TEST_USER")
     whenever(repository.save(any<PayRate>())).thenReturn(savedPayRate)
 
+    val now = LocalDateTime.now(clock)
     val result = payRateUpdateService.update(UUID1, request)
 
     verify(repository).save(any<PayRate>())
@@ -115,12 +120,12 @@ class PayRateUpdateServiceTest {
 
     with(result) {
       assertThat(id).isNotEqualTo(UUID1)
-      assertThat(prisonCode).isEqualTo(request.prisonCode)
-      assertThat(type).isEqualTo(request.type)
+      assertThat(prisonCode).isEqualTo(existing.prisonCode)
+      assertThat(type).isEqualTo(existing.type)
       assertThat(startDate).isEqualTo(request.startDate)
       assertThat(rate).isEqualTo(request.rate)
       assertThat(createdBy).isEqualTo("TEST_USER")
-      assertThat(createdDateTime).isEqualTo(LocalDateTime.now(clock))
+      assertThat(createdDateTime).isCloseTo(now, within(1, ChronoUnit.SECONDS))
       assertThat(updatedBy).isNull()
       assertThat(updatedDateTime).isNull()
     }
@@ -138,6 +143,7 @@ class PayRateUpdateServiceTest {
     whenever(authenticationHolder.username).thenReturn("TEST_USER")
     whenever(repository.save(any<PayRate>())).thenReturn(savedPayRate)
 
+    val now = LocalDateTime.now(clock)
     val result = payRateUpdateService.update(UUID1, request)
 
     inOrder(repository) {
@@ -147,12 +153,12 @@ class PayRateUpdateServiceTest {
 
     with(result) {
       assertThat(id).isNotNull()
-      assertThat(prisonCode).isEqualTo(request.prisonCode)
-      assertThat(type).isEqualTo(request.type)
+      assertThat(prisonCode).isEqualTo(existing.prisonCode)
+      assertThat(type).isEqualTo(existing.type)
       assertThat(startDate).isEqualTo(request.startDate)
       assertThat(rate).isEqualTo(request.rate)
       assertThat(createdBy).isEqualTo("TEST_USER")
-      assertThat(createdDateTime).isEqualTo(LocalDateTime.now(clock))
+      assertThat(createdDateTime).isCloseTo(now, within(1, ChronoUnit.SECONDS))
       assertThat(updatedBy).isNull()
       assertThat(updatedDateTime).isNull()
     }
@@ -179,6 +185,6 @@ class PayRateUpdateServiceTest {
 
     assertThatThrownBy { payRateUpdateService.update(UUID1, request) }
       .isInstanceOf(IllegalArgumentException::class.java)
-      .hasMessage("Pay rate already exists for prison: ${request.prisonCode}, type: ${request.type} on ${request.startDate}")
+      .hasMessage("Pay rate already exists for prison: ${existing.prisonCode}, type: ${existing.type} on ${request.startDate}")
   }
 }

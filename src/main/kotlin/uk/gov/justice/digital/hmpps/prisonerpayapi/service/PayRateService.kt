@@ -11,7 +11,6 @@ import java.time.LocalDate
 import java.util.UUID
 
 @Service
-@Transactional
 class PayRateService(
   private val payRateRepository: PayRateRepository,
   private val payRateUpdateService: PayRateUpdateService,
@@ -21,5 +20,6 @@ class PayRateService(
     .getCurrentAndFuturePayRatesByPrisonCode(prisonCode, LocalDate.now(clock))
     .map { it.toModel() }
 
+  @Transactional
   fun update(id: UUID, request: UpdatePayRateRequest): PayRateDto = payRateUpdateService.update(id, request)
 }

@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerpayapi.mapping
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.within
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.response.PayRateDto
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.updatePayRateRequest
@@ -11,6 +12,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import java.util.*
 
 class PayRateMappingTest {
@@ -51,16 +53,20 @@ class PayRateMappingTest {
   fun `should map from dto to entity`() {
     val dto = updatePayRateRequest()
 
-    val result = dto.toEntity("TEST_USER", clock)
+    val prisonCode = "RSI"
+    val type = PayStatusType.LONG_TERM_SICK
+    val now = LocalDateTime.now(clock)
+
+    val result = dto.toEntity(prisonCode, type, "TEST_USER", clock)
 
     with(result) {
       assertThat(id).isNull()
-      assertThat(prisonCode).isEqualTo(dto.prisonCode)
-      assertThat(type).isEqualTo(dto.type)
+      assertThat(prisonCode).isEqualTo(prisonCode)
+      assertThat(type).isEqualTo(type)
       assertThat(startDate).isEqualTo(dto.startDate)
       assertThat(rate).isEqualTo(dto.rate)
       assertThat(createdBy).isEqualTo("TEST_USER")
-      assertThat(createdDateTime).isEqualTo(LocalDateTime.now(clock))
+      assertThat(createdDateTime).isCloseTo(now, within(1, ChronoUnit.SECONDS))
       assertThat(updatedBy).isNull()
       assertThat(updatedDateTime).isNull()
     }

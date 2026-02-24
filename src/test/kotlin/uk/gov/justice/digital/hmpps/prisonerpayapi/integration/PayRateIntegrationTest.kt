@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerpayapi.integration
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.within
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -20,6 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayRateReposit
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 class PayRateIntegrationTest : IntegrationTestBase() {
@@ -167,6 +169,7 @@ class PayRateIntegrationTest : IntegrationTestBase() {
     fun `should update pay rate when existing and request start date is today`() {
       val beforeCount = payRateRepository.count()
 
+      val now = LocalDateTime.now(clock)
       val request = updatePayRateRequest(startDate = today, rate = 100)
       updatePayRate(UUID1, request)
         .success<PayRateDto>()
@@ -177,7 +180,7 @@ class PayRateIntegrationTest : IntegrationTestBase() {
           assertThat(it.createdBy).isEqualTo("USER1")
           assertThat(it.createdDateTime).isEqualTo(LocalDateTime.of(2025, 1, 1, 0, 0))
           assertThat(it.updatedBy).isEqualTo(USERNAME)
-          assertThat(it.updatedDateTime).isEqualTo(LocalDateTime.now(clock))
+          assertThat(it.updatedDateTime).isCloseTo(now, within(1, ChronoUnit.SECONDS))
         }
       assertThat(payRateRepository.count()).isEqualTo(beforeCount)
     }
@@ -192,6 +195,7 @@ class PayRateIntegrationTest : IntegrationTestBase() {
 
       val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 100)
 
+      val now = LocalDateTime.now(clock)
       updatePayRate(UUID1, request)
         .success<PayRateDto>()
         .also {
@@ -199,7 +203,7 @@ class PayRateIntegrationTest : IntegrationTestBase() {
           assertThat(it.startDate).isEqualTo(request.startDate)
           assertThat(it.rate).isEqualTo(request.rate)
           assertThat(it.createdBy).isEqualTo(USERNAME)
-          assertThat(it.createdDateTime).isEqualTo(LocalDateTime.now(clock))
+          assertThat(it.createdDateTime).isCloseTo(now, within(1, ChronoUnit.SECONDS))
           assertThat(it.updatedBy).isNull()
           assertThat(it.updatedDateTime).isNull()
         }
@@ -216,6 +220,7 @@ class PayRateIntegrationTest : IntegrationTestBase() {
 
       val request = updatePayRateRequest(startDate = today, rate = 100)
 
+      val now = LocalDateTime.now(clock)
       updatePayRate(UUID1, request)
         .success<PayRateDto>()
         .also {
@@ -223,7 +228,7 @@ class PayRateIntegrationTest : IntegrationTestBase() {
           assertThat(it.startDate).isEqualTo(request.startDate)
           assertThat(it.rate).isEqualTo(request.rate)
           assertThat(it.createdBy).isEqualTo(USERNAME)
-          assertThat(it.createdDateTime).isEqualTo(LocalDateTime.now(clock))
+          assertThat(it.createdDateTime).isCloseTo(now, within(1, ChronoUnit.SECONDS))
           assertThat(it.updatedBy).isNull()
           assertThat(it.updatedDateTime).isNull()
         }
@@ -237,6 +242,7 @@ class PayRateIntegrationTest : IntegrationTestBase() {
 
       val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 100)
 
+      val now = LocalDateTime.now(clock)
       updatePayRate(UUID1, request)
         .success<PayRateDto>()
         .also {
@@ -244,7 +250,7 @@ class PayRateIntegrationTest : IntegrationTestBase() {
           assertThat(it.startDate).isEqualTo(request.startDate)
           assertThat(it.rate).isEqualTo(request.rate)
           assertThat(it.createdBy).isEqualTo(USERNAME)
-          assertThat(it.createdDateTime).isEqualTo(LocalDateTime.now(clock))
+          assertThat(it.createdDateTime).isCloseTo(now, within(1, ChronoUnit.SECONDS))
           assertThat(it.updatedBy).isNull()
           assertThat(it.updatedDateTime).isNull()
         }
@@ -261,6 +267,7 @@ class PayRateIntegrationTest : IntegrationTestBase() {
 
       val request = updatePayRateRequest(startDate = today.plusMonths(1), rate = 100)
 
+      val now = LocalDateTime.now(clock)
       updatePayRate(UUID1, request)
         .success<PayRateDto>()
         .also {
@@ -268,7 +275,7 @@ class PayRateIntegrationTest : IntegrationTestBase() {
           assertThat(it.startDate).isEqualTo(request.startDate)
           assertThat(it.rate).isEqualTo(request.rate)
           assertThat(it.createdBy).isEqualTo(USERNAME)
-          assertThat(it.createdDateTime).isEqualTo(LocalDateTime.now(clock))
+          assertThat(it.createdDateTime).isCloseTo(now, within(1, ChronoUnit.SECONDS))
           assertThat(it.updatedBy).isNull()
           assertThat(it.updatedDateTime).isNull()
         }

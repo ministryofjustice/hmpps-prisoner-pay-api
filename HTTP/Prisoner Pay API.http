@@ -61,8 +61,6 @@ Authorization: Bearer {{$auth.token("ui-auth-token")}}
 Content-Type: application/json
 
 {
-  "prisonCode": "RSI",
-  "type": "LONG_TERM_SICK",
   "startDate": "2026-02-01",
   "rate": 120
 }

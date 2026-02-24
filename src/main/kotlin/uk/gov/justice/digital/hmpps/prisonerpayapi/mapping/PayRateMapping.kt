@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerpayapi.mapping
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.UpdatePayRateRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.response.PayRateDto
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayRate
+import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import java.time.Clock
 import java.time.LocalDateTime
 
@@ -18,7 +19,12 @@ internal fun PayRate.toModel(): PayRateDto = PayRateDto(
   updatedBy = updatedBy,
 )
 
-internal fun UpdatePayRateRequest.toEntity(createdBy: String, clock: Clock) = PayRate(
+internal fun UpdatePayRateRequest.toEntity(
+  prisonCode: String,
+  type: PayStatusType,
+  createdBy: String,
+  clock: Clock,
+) = PayRate(
   prisonCode = prisonCode,
   type = type,
   startDate = startDate,

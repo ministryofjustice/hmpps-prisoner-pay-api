@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.SYSTEM_USERNAME
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.UpdatePayRateRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.response.PayRateDto
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayRate
+import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayRateRepository
 import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toEntity
 import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toModel
@@ -32,43 +33,46 @@ class PayRateUpdateService(
       .orElseThrow { EntityNotFoundException("Pay rate with id '$id' not found") }
 
     return when {
-      existing.startDate.isBefore(today) -> createNewPayRate(request, currentUser)
+      existing.startDate.isBefore(today) -> createNewPayRate(existing, request, currentUser)
       existing.startDate == today -> handleTodayRate(existing, request, today, currentUser)
       else -> replaceFutureRate(existing, request, currentUser)
     }
   }
 
-  private fun createNewPayRate(request: UpdatePayRateRequest, createdBy: String): PayRateDto = request
-    .also { checkNoDuplicatesExist(it) }
-    .toEntity(createdBy, clock)
-    .let { payRateRepository.save(it) }
-    .toModel()
+  private fun createNewPayRate(existing: PayRate, request: UpdatePayRateRequest, createdBy: String): PayRateDto {
+    checkNoDuplicatesExist(prisonCode = existing.prisonCode, type = existing.type, startDate = request.startDate)
 
-  private fun handleTodayRate(existing: PayRate, request: UpdatePayRateRequest, today: LocalDate, user: String): PayRateDto = if (request.startDate == today) {
+    return request.toEntity(
+      prisonCode = existing.prisonCode,
+      type = existing.type,
+      createdBy = createdBy,
+      clock = clock,
+    ).run { payRateRepository.save(this) }.toModel()
+  }
+
+  private fun handleTodayRate(
+    existing: PayRate,
+    request: UpdatePayRateRequest,
+    today: LocalDate,
+    user: String,
+  ): PayRateDto = if (request.startDate == today) {
     existing.apply {
       rate = request.rate
       updatedBy = user
       updatedDateTime = LocalDateTime.now(clock)
-    }
-      .let { payRateRepository.save(it) }
-      .toModel()
+    }.run { payRateRepository.save(this).toModel() }
   } else {
-    createNewPayRate(request, user)
+    createNewPayRate(existing, request, user)
   }
 
   private fun replaceFutureRate(existing: PayRate, request: UpdatePayRateRequest, createdBy: String): PayRateDto = existing
     .also { payRateRepository.delete(it) }
-    .let { createNewPayRate(request, createdBy) }
+    .run { createNewPayRate(existing, request, createdBy) }
 
-  private fun checkNoDuplicatesExist(request: UpdatePayRateRequest) {
-    if (payRateRepository.existsByPrisonCodeAndTypeAndStartDate(
-        request.prisonCode,
-        request.type,
-        request.startDate,
-      )
-    ) {
+  private fun checkNoDuplicatesExist(prisonCode: String, type: PayStatusType, startDate: LocalDate) {
+    if (payRateRepository.existsByPrisonCodeAndTypeAndStartDate(prisonCode, type, startDate)) {
       throw IllegalArgumentException(
-        "Pay rate already exists for prison: ${request.prisonCode}, type: ${request.type} on ${request.startDate}",
+        "Pay rate already exists for prison: $prisonCode, type: $type on $startDate",
       )
     }
   }

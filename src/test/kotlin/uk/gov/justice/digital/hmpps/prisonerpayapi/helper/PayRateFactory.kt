@@ -36,13 +36,9 @@ internal fun payRate(
 )
 
 internal fun updatePayRateRequest(
-  prisonCode: String = "RSI",
-  type: PayStatusType = PayStatusType.LONG_TERM_SICK,
   startDate: LocalDate = LocalDate.of(2026, 1, 1),
   rate: Int = 99,
 ) = UpdatePayRateRequest(
-  prisonCode = prisonCode,
-  type = type,
   startDate = startDate,
   rate = rate,
 )
