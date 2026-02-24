@@ -20,7 +20,6 @@ internal fun payRate(
   startDate: LocalDate = LocalDate.of(2026, 1, 1),
   rate: Int = 99,
   createdBy: String = "TEST_USER",
-//  createdDateTime: LocalDateTime = LocalDateTime.of(2026, 1, 1, 10, 0),
   createdDateTime: LocalDateTime = LocalDateTime.now(clock),
   updatedBy: String? = null,
   updatedDateTime: LocalDateTime? = null,
