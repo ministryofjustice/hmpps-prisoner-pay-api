@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayRate
+import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import java.time.LocalDate
 import java.util.*
 
@@ -44,4 +45,10 @@ interface PayRateRepository : JpaRepository<PayRate, UUID> {
     """,
   )
   fun findActivePayRates(prisonCode: String, date: LocalDate): List<PayRate>
+
+  fun existsByPrisonCodeAndTypeAndStartDate(
+    prisonCode: String,
+    type: PayStatusType,
+    startDate: LocalDate,
+  ): Boolean
 }

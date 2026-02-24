@@ -23,9 +23,13 @@ class PayRate(
 
   val startDate: LocalDate,
 
-  val rate: Int,
+  var rate: Int,
 
   val createdDateTime: LocalDateTime,
 
   val createdBy: String,
+
+  var updatedDateTime: LocalDateTime? = null,
+
+  var updatedBy: String? = null,
 )

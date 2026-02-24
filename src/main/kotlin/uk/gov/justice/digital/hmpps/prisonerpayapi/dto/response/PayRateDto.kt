@@ -30,4 +30,10 @@ data class PayRateDto(
 
   @Schema(description = "The user who created the pay rate", example = "USER1")
   val createdBy: String,
+
+  @Schema(description = "The date and time the pay rate was updated", example = "2025-01-26T12:45:11")
+  val updatedDateTime: LocalDateTime? = null,
+
+  @Schema(description = "The user who updated the pay rate", example = "USER2")
+  val updatedBy: String? = null,
 )

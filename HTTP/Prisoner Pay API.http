@@ -51,3 +51,18 @@ Content-Type: application/json
 // @no-log
 GET {{ baseUrl }}/pay-rates/prison/RSI
 Authorization: Bearer {{$auth.token("orchestrator-auth-token")}}
+
+### Update a pay rate
+
+// @no-log
+
+PUT {{ baseUrl }}/pay-rates/019b9e84-de01-7939-859e-e72af57bd7f1
+Authorization: Bearer {{$auth.token("ui-auth-token")}}
+Content-Type: application/json
+
+{
+  "prisonCode": "RSI",
+  "type": "LONG_TERM_SICK",
+  "startDate": "2026-02-01",
+  "rate": 120
+}
