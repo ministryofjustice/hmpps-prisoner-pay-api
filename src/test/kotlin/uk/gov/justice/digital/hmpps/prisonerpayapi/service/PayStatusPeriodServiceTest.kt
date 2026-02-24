@@ -65,7 +65,7 @@ class PayStatusPeriodServiceTest {
       createdDateTime = newEntity.createdDateTime,
     )
 
-    whenever(repository.save(any())).thenReturn(savedEntity)
+    whenever(repository.save(any<PayStatusPeriod>())).thenReturn(savedEntity)
 
     val result = payStatusPeriodService.create(request)
 
