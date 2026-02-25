@@ -54,6 +54,18 @@ class PayRateController(
     prisonCode: String,
   ): List<PayRateDto> = payRateService.getCurrentAndFuturePayRatesByPrisonCode(prisonCode)
 
+  /**
+   * Updates a pay rate.
+   *
+   * Business rules:
+   * - The start date must be today or within the next 30 days.
+   * - An existing pay rate with a future start date cannot be updated and must be canceled first.
+   * - Only one future pay rate may exist for a given prison code and type.
+   * - If the existing pay rate is effective today and the requested start date is today, the pay rate is updated in place.
+   * - If the requested start date is in the future, a new pay rate is created depending on whether a future pay rate already exists.
+   *   If a future pay rate already exists, 400 is returned, else a new pay rate is created.
+   *
+   */
   @PutMapping("/{id}")
   @PreAuthorize("hasRole('ROLE_PRISONER_PAY__PRISONER_PAY_UI')")
   @Operation(

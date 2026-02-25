@@ -187,7 +187,7 @@ class PayRateIntegrationTest : IntegrationTestBase() {
 
     @Test
     @Sql("classpath:sql/pay-rates/update-pay-rates.sql")
-    fun `should create new pay rate when existing start date is in past and request start date is in future`() {
+    fun `should create new pay rate when existing start date is in past and request start date is in future and no future rate exists`() {
       whenever(clock.instant()).thenReturn(Instant.parse("2026-02-10T00:00:00.00Z"))
       today = LocalDate.now(clock)
 
@@ -208,6 +208,18 @@ class PayRateIntegrationTest : IntegrationTestBase() {
           assertThat(it.updatedDateTime).isNull()
         }
       assertThat(payRateRepository.count()).isEqualTo(beforeCount + 1)
+    }
+
+    @Test
+    @Sql("classpath:sql/pay-rates/update-pay-rates-future-rates.sql")
+    fun `should return bad request when existing start date is in past and request start date is in future and future rate exists`() {
+      whenever(clock.instant()).thenReturn(Instant.parse("2026-02-10T00:00:00.00Z"))
+      today = LocalDate.now(clock)
+
+      val request = updatePayRateRequest(startDate = today.plusDays(20), rate = 100)
+
+      updatePayRate(UUID1, request)
+        .fail(HttpStatus.BAD_REQUEST)
     }
 
     @Test
@@ -237,7 +249,7 @@ class PayRateIntegrationTest : IntegrationTestBase() {
 
     @Test
     @Sql("classpath:sql/pay-rates/update-pay-rates.sql")
-    fun `should create new pay rate when existing start date is today and request start date is in future`() {
+    fun `should create new pay rate when existing start date is today and request start date is in future and no future rate exists`() {
       val beforeCount = payRateRepository.count()
 
       val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 100)
@@ -258,32 +270,44 @@ class PayRateIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    @Sql("classpath:sql/pay-rates/update-pay-rates.sql")
-    fun `should delete existing pay rate and create new pay rate when existing and request start dates are in future`() {
-      whenever(clock.instant()).thenReturn(Instant.parse("2026-01-01T00:00:00.00Z"))
-      today = LocalDate.now(clock)
+    @Sql("classpath:sql/pay-rates/update-pay-rates-future-rates.sql")
+    fun `should return bad request when existing start date is today and request start date is in future and future rate exists`() {
+      val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 100)
 
-      val beforeCount = payRateRepository.count()
-
-      val request = updatePayRateRequest(startDate = today.plusMonths(1), rate = 100)
-
-      val now = LocalDateTime.now(clock)
       updatePayRate(UUID1, request)
-        .success<PayRateDto>()
-        .also {
-          assertThat(it.id).isNotEqualTo(UUID1)
-          assertThat(it.startDate).isEqualTo(request.startDate)
-          assertThat(it.rate).isEqualTo(request.rate)
-          assertThat(it.createdBy).isEqualTo(USERNAME)
-          assertThat(it.createdDateTime).isCloseTo(now, within(1, ChronoUnit.SECONDS))
-          assertThat(it.updatedBy).isNull()
-          assertThat(it.updatedDateTime).isNull()
-        }
-      assertThat(payRateRepository.count()).isEqualTo(beforeCount)
+        .fail(HttpStatus.BAD_REQUEST)
     }
 
     @Test
-    @Sql("classpath:sql/pay-rates/update-pay-rates-duplicate-check.sql")
+    @Sql("classpath:sql/pay-rates/update-pay-rates.sql")
+    fun `should return bad request when request start date is beyond 30 days from today`() {
+      val request = updatePayRateRequest(startDate = today.plusDays(31), rate = 120)
+
+      updatePayRate(UUID1, request)
+        .fail(HttpStatus.BAD_REQUEST)
+    }
+
+    @Test
+    @Sql("classpath:sql/pay-rates/update-pay-rates.sql")
+    fun `should return bad request when request start date is in the past`() {
+      val request = updatePayRateRequest(startDate = today.minusDays(10), rate = 120)
+
+      updatePayRate(UUID1, request)
+        .fail(HttpStatus.BAD_REQUEST)
+    }
+
+    @Test
+    @Sql("classpath:sql/pay-rates/update-pay-rates-future-rates.sql")
+    fun `should return bad request existing start date is in the future`() {
+      val uuid = UUID.fromString("22222222-2222-2222-2222-222222222222")
+      val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 120)
+
+      updatePayRate(uuid, request)
+        .fail(HttpStatus.BAD_REQUEST)
+    }
+
+    @Test
+    @Sql("classpath:sql/pay-rates/update-pay-rates-future-rates.sql")
     fun `should return bad request when duplicate pay rate exists for same prison, type and start date`() {
       val request = updatePayRateRequest(startDate = LocalDate.of(2026, 2, 10), rate = 100)
       updatePayRate(UUID1, request)

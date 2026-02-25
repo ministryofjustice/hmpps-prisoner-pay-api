@@ -51,4 +51,10 @@ interface PayRateRepository : JpaRepository<PayRate, UUID> {
     type: PayStatusType,
     startDate: LocalDate,
   ): Boolean
+
+  fun existsByPrisonCodeAndTypeAndStartDateAfter(
+    prisonCode: String,
+    type: PayStatusType,
+    startDate: LocalDate,
+  ): Boolean
 }

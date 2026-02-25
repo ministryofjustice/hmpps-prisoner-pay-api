@@ -28,15 +28,40 @@ class PayRateUpdateService(
   fun update(id: UUID, request: UpdatePayRateRequest): PayRateDto {
     val currentUser = authenticationHolder.username ?: SYSTEM_USERNAME
     val today = LocalDate.now(clock)
+    val maxAllowedStartDate = today.plusDays(30)
 
     val existing = payRateRepository.findById(id)
       .orElseThrow { EntityNotFoundException("Pay rate with id '$id' not found") }
 
-    return when {
-      existing.startDate.isBefore(today) -> createNewPayRate(existing, request, currentUser)
-      existing.startDate == today -> handleTodayRate(existing, request, today, currentUser)
-      else -> replaceFutureRate(existing, request, currentUser)
+    require(request.startDate in today..maxAllowedStartDate) {
+      "Pay rate start date must be today or in the next 30 days"
     }
+
+    // If existing rate is in future, ensuring it cannot be updated
+    require(existing.startDate <= today) { "Future pay rate must be cancelled before updating" }
+
+    // If request start date is in future, ensuring only one future rate exists
+    if (request.startDate > today &&
+      payRateRepository.existsByPrisonCodeAndTypeAndStartDateAfter(existing.prisonCode, existing.type, today)
+    ) {
+      throw IllegalArgumentException("A future pay rate already exists")
+    }
+
+    return if (existing.startDate == today) {
+      handleTodayRate(existing, request, currentUser)
+    } else {
+      createNewPayRate(existing, request, currentUser)
+    }
+  }
+
+  private fun handleTodayRate(existing: PayRate, request: UpdatePayRateRequest, user: String): PayRateDto = if (request.startDate == existing.startDate) {
+    existing.apply {
+      rate = request.rate
+      updatedBy = user
+      updatedDateTime = LocalDateTime.now(clock)
+    }.run { payRateRepository.save(this).toModel() }
+  } else {
+    createNewPayRate(existing, request, user)
   }
 
   private fun createNewPayRate(existing: PayRate, request: UpdatePayRateRequest, createdBy: String): PayRateDto {
@@ -50,30 +75,9 @@ class PayRateUpdateService(
     ).run { payRateRepository.save(this) }.toModel()
   }
 
-  private fun handleTodayRate(
-    existing: PayRate,
-    request: UpdatePayRateRequest,
-    today: LocalDate,
-    user: String,
-  ): PayRateDto = if (request.startDate == today) {
-    existing.apply {
-      rate = request.rate
-      updatedBy = user
-      updatedDateTime = LocalDateTime.now(clock)
-    }.run { payRateRepository.save(this).toModel() }
-  } else {
-    createNewPayRate(existing, request, user)
-  }
-
-  private fun replaceFutureRate(existing: PayRate, request: UpdatePayRateRequest, createdBy: String): PayRateDto = existing
-    .also { payRateRepository.delete(it) }
-    .run { createNewPayRate(existing, request, createdBy) }
-
   private fun checkNoDuplicatesExist(prisonCode: String, type: PayStatusType, startDate: LocalDate) {
-    if (payRateRepository.existsByPrisonCodeAndTypeAndStartDate(prisonCode, type, startDate)) {
-      throw IllegalArgumentException(
-        "Pay rate already exists for prison: $prisonCode, type: $type on $startDate",
-      )
+    require(!payRateRepository.existsByPrisonCodeAndTypeAndStartDate(prisonCode, type, startDate)) {
+      "Pay rate already exists for prison: $prisonCode, type: $type on $startDate"
     }
   }
 }

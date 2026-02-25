@@ -9,7 +9,6 @@ import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.UUID1
@@ -63,12 +62,14 @@ class PayRateUpdateServiceTest {
   }
 
   @Test
-  fun `should create new pay rate if existing start date is today and request start date is in future`() {
+  fun `should create new pay rate if existing start date is today and request start date is in future and no future rate exists`() {
     val existing = payRate(startDate = today, rate = 80)
     val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 100)
     val savedPayRate = payRate(id = UUID.randomUUID(), startDate = request.startDate, rate = request.rate)
 
     whenever(repository.findById(UUID1)).thenReturn(Optional.of(existing))
+    whenever(repository.existsByPrisonCodeAndTypeAndStartDateAfter(any(), any(), any()))
+      .thenReturn(false)
     whenever(repository.existsByPrisonCodeAndTypeAndStartDate(any(), any(), any()))
       .thenReturn(false)
     whenever(authenticationHolder.username).thenReturn("TEST_USER")
@@ -101,12 +102,28 @@ class PayRateUpdateServiceTest {
   }
 
   @Test
-  fun `should create new pay rate if existing start date is in past and request start date is today or in future`() {
+  fun `should throw exception if existing start date is today and request start date is in future and future rate exists`() {
+    val existing = payRate(startDate = today, rate = 80)
+    val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 100)
+
+    whenever(repository.findById(UUID1)).thenReturn(Optional.of(existing))
+    whenever(repository.existsByPrisonCodeAndTypeAndStartDateAfter(any(), any(), any()))
+      .thenReturn(true)
+
+    assertThatThrownBy { payRateUpdateService.update(UUID1, request) }
+      .isInstanceOf(IllegalArgumentException::class.java)
+      .hasMessage("A future pay rate already exists")
+  }
+
+  @Test
+  fun `should create new pay rate if existing start date is in past and request start date is today or in future and no future rate exists`() {
     val existing = payRate(startDate = today.minusDays(10), rate = 80)
     val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 100)
     val savedPayRate = payRate(id = UUID.randomUUID(), startDate = request.startDate, rate = request.rate)
 
     whenever(repository.findById(UUID1)).thenReturn(Optional.of(existing))
+    whenever(repository.existsByPrisonCodeAndTypeAndStartDateAfter(any(), any(), any()))
+      .thenReturn(false)
     whenever(repository.existsByPrisonCodeAndTypeAndStartDate(any(), any(), any()))
       .thenReturn(false)
     whenever(authenticationHolder.username).thenReturn("TEST_USER")
@@ -132,36 +149,53 @@ class PayRateUpdateServiceTest {
   }
 
   @Test
-  fun `should delete existing pay rate and create new pay rate if existing and request start date are in future`() {
-    val existing = payRate(startDate = today.plusDays(10), rate = 80)
+  fun `should throw exception if existing start date is in past and request start date is today or in future and future rate exists`() {
+    val existing = payRate(startDate = today.minusDays(10), rate = 80)
     val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 100)
-    val savedPayRate = payRate(id = UUID.randomUUID(), startDate = request.startDate, rate = request.rate)
 
     whenever(repository.findById(UUID1)).thenReturn(Optional.of(existing))
-    whenever(repository.existsByPrisonCodeAndTypeAndStartDate(any(), any(), any()))
-      .thenReturn(false)
-    whenever(authenticationHolder.username).thenReturn("TEST_USER")
-    whenever(repository.save(any<PayRate>())).thenReturn(savedPayRate)
+    whenever(repository.existsByPrisonCodeAndTypeAndStartDateAfter(any(), any(), any()))
+      .thenReturn(true)
 
-    val now = LocalDateTime.now(clock)
-    val result = payRateUpdateService.update(UUID1, request)
+    assertThatThrownBy { payRateUpdateService.update(UUID1, request) }
+      .isInstanceOf(IllegalArgumentException::class.java)
+      .hasMessage("A future pay rate already exists")
+  }
 
-    inOrder(repository) {
-      verify(repository).delete(existing)
-      verify(repository).save(any<PayRate>())
-    }
+  @Test
+  fun `should throw exception if request start date is beyond 30 days from today`() {
+    val existing = payRate(startDate = today.minusDays(10), rate = 80)
+    val request = updatePayRateRequest(startDate = today.plusDays(31), rate = 100)
 
-    with(result) {
-      assertThat(id).isNotNull()
-      assertThat(prisonCode).isEqualTo(existing.prisonCode)
-      assertThat(type).isEqualTo(existing.type)
-      assertThat(startDate).isEqualTo(request.startDate)
-      assertThat(rate).isEqualTo(request.rate)
-      assertThat(createdBy).isEqualTo("TEST_USER")
-      assertThat(createdDateTime).isCloseTo(now, within(1, ChronoUnit.SECONDS))
-      assertThat(updatedBy).isNull()
-      assertThat(updatedDateTime).isNull()
-    }
+    whenever(repository.findById(UUID1)).thenReturn(Optional.of(existing))
+
+    assertThatThrownBy { payRateUpdateService.update(UUID1, request) }
+      .isInstanceOf(IllegalArgumentException::class.java)
+      .hasMessage("Pay rate start date must be today or in the next 30 days")
+  }
+
+  @Test
+  fun `should throw exception if request start date is in the past`() {
+    val existing = payRate(startDate = today, rate = 80)
+    val request = updatePayRateRequest(startDate = today.minusDays(1), rate = 100)
+
+    whenever(repository.findById(UUID1)).thenReturn(Optional.of(existing))
+
+    assertThatThrownBy { payRateUpdateService.update(UUID1, request) }
+      .isInstanceOf(IllegalArgumentException::class.java)
+      .hasMessage("Pay rate start date must be today or in the next 30 days")
+  }
+
+  @Test
+  fun `should throw exception if existing start date is in future`() {
+    val existing = payRate(startDate = today.plusDays(10), rate = 80)
+    val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 100)
+
+    whenever(repository.findById(UUID1)).thenReturn(Optional.of(existing))
+
+    assertThatThrownBy { payRateUpdateService.update(UUID1, request) }
+      .isInstanceOf(IllegalArgumentException::class.java)
+      .hasMessage("Future pay rate must be cancelled before updating")
   }
 
   @Test
