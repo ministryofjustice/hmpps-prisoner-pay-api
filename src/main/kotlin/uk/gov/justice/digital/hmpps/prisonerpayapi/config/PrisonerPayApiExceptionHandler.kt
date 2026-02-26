@@ -3,7 +3,6 @@ package uk.gov.justice.digital.hmpps.prisonerpayapi.config
 import jakarta.persistence.EntityNotFoundException
 import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
-import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.FORBIDDEN
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
@@ -49,28 +48,6 @@ class PrisonerPayApiExceptionHandler {
         developerMessage = e.message,
       ),
     ).also { log.info("Entity not found exception: {}", e.message) }
-
-  @ExceptionHandler(DataIntegrityViolationException::class)
-  fun handleDataIntegrityViolationException(e: DataIntegrityViolationException): ResponseEntity<ErrorResponse> {
-    val constraintName = (e.rootCause as? org.hibernate.exception.ConstraintViolationException)?.constraintName
-
-    return if (constraintName == "unique_pay_rate_prison_type_start_date") {
-      val message = "Pay rate already exists for the given prison, type and start date"
-
-      ResponseEntity
-        .status(BAD_REQUEST)
-        .body(
-          ErrorResponse(
-            status = BAD_REQUEST,
-            userMessage = "Validation failure: $message",
-            developerMessage = message,
-          ),
-        ).also { log.info("Data integrity violation exception: {}", e.message) }
-    } else {
-      log.error("Unhandled DataIntegrityViolationException", e)
-      throw e
-    }
-  }
 
   @ExceptionHandler(AccessDeniedException::class)
   fun handleAccessDeniedException(e: AccessDeniedException): ResponseEntity<ErrorResponse> = ResponseEntity
