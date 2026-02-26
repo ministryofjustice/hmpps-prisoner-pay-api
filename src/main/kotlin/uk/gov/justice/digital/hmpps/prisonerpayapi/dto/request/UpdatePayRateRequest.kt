@@ -10,6 +10,6 @@ data class UpdatePayRateRequest(
   @Schema(description = "The start date", example = "2025-01-01")
   val startDate: LocalDate,
 
-  @Schema(description = "The day rate in pence per session", example = "99")
+  @Schema(description = "The pay rate in pence per session", example = "99")
   val rate: Int,
 )
