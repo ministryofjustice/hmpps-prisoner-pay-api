@@ -218,8 +218,11 @@ class PayRateIntegrationTest : IntegrationTestBase() {
 
       val request = updatePayRateRequest(startDate = today.plusDays(20), rate = 100)
 
-      updatePayRate(UUID1, request)
-        .fail(HttpStatus.BAD_REQUEST)
+      with(updatePayRate(UUID1, request).badRequest()) {
+        assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+        assertThat(userMessage).isEqualTo("Validation failure: A future pay rate already exists")
+        assertThat(developerMessage).isEqualTo("A future pay rate already exists")
+      }
     }
 
     @Test
@@ -274,8 +277,11 @@ class PayRateIntegrationTest : IntegrationTestBase() {
     fun `should return bad request when existing start date is today and request start date is in future and future rate exists`() {
       val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 100)
 
-      updatePayRate(UUID1, request)
-        .fail(HttpStatus.BAD_REQUEST)
+      with(updatePayRate(UUID1, request).badRequest()) {
+        assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+        assertThat(userMessage).isEqualTo("Validation failure: A future pay rate already exists")
+        assertThat(developerMessage).isEqualTo("A future pay rate already exists")
+      }
     }
 
     @Test
@@ -283,8 +289,11 @@ class PayRateIntegrationTest : IntegrationTestBase() {
     fun `should return bad request when request start date is beyond 30 days from today`() {
       val request = updatePayRateRequest(startDate = today.plusDays(31), rate = 120)
 
-      updatePayRate(UUID1, request)
-        .fail(HttpStatus.BAD_REQUEST)
+      with(updatePayRate(UUID1, request).badRequest()) {
+        assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+        assertThat(userMessage).isEqualTo("Validation failure: Pay rate start date must be today or in the next 30 days")
+        assertThat(developerMessage).isEqualTo("Pay rate start date must be today or in the next 30 days")
+      }
     }
 
     @Test
@@ -292,8 +301,11 @@ class PayRateIntegrationTest : IntegrationTestBase() {
     fun `should return bad request when request start date is in the past`() {
       val request = updatePayRateRequest(startDate = today.minusDays(10), rate = 120)
 
-      updatePayRate(UUID1, request)
-        .fail(HttpStatus.BAD_REQUEST)
+      with(updatePayRate(UUID1, request).badRequest()) {
+        assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+        assertThat(userMessage).isEqualTo("Validation failure: Pay rate start date must be today or in the next 30 days")
+        assertThat(developerMessage).isEqualTo("Pay rate start date must be today or in the next 30 days")
+      }
     }
 
     @Test
@@ -302,16 +314,27 @@ class PayRateIntegrationTest : IntegrationTestBase() {
       val uuid = UUID.fromString("22222222-2222-2222-2222-222222222222")
       val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 120)
 
-      updatePayRate(uuid, request)
-        .fail(HttpStatus.BAD_REQUEST)
+      with(updatePayRate(uuid, request).badRequest()) {
+        assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+        assertThat(userMessage).isEqualTo("Validation failure: Future pay rate must be cancelled before updating")
+        assertThat(developerMessage).isEqualTo("Future pay rate must be cancelled before updating")
+      }
     }
 
     @Test
-    @Sql("classpath:sql/pay-rates/update-pay-rates-future-rates.sql")
+    @Sql("classpath:sql/pay-rates/update-pay-rates-duplicate-check.sql")
     fun `should return bad request when duplicate pay rate exists for same prison, type and start date`() {
-      val request = updatePayRateRequest(startDate = LocalDate.of(2026, 2, 10), rate = 100)
-      updatePayRate(UUID1, request)
-        .fail(HttpStatus.BAD_REQUEST)
+      val prisonCode = "RSI"
+      val type = PayStatusType.LONG_TERM_SICK
+      val startDate = LocalDate.of(2026, 2, 1)
+
+      val request = updatePayRateRequest(startDate = startDate, rate = 130)
+
+      with(updatePayRate(UUID1, request).badRequest()) {
+        assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+        assertThat(userMessage).isEqualTo("Validation failure: Pay rate already exists for prison: $prisonCode, type: $type on $startDate")
+        assertThat(developerMessage).isEqualTo("Pay rate already exists for prison: $prisonCode, type: $type on $startDate")
+      }
     }
 
     @Test
