@@ -5,6 +5,7 @@ import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.UpdatePayRateRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.response.PayRateDto
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayRateRepository
+import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.findOrThrowNotFound
 import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toModel
 import java.time.Clock
 import java.time.LocalDate
@@ -22,4 +23,14 @@ class PayRateService(
 
   @Transactional
   fun update(id: UUID, request: UpdatePayRateRequest): PayRateDto = payRateUpdateService.update(id, request)
+
+  fun delete(id: UUID) {
+    payRateRepository.findOrThrowNotFound(id)
+      .apply {
+        require(startDate.isAfter(LocalDate.now(clock))) {
+          "Cannot delete a pay rate with a start date in the past or today"
+        }
+      }
+      .also { payRateRepository.delete(it) }
+  }
 }
