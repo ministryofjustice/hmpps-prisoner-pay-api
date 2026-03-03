@@ -356,6 +356,56 @@ class PayRateIntegrationTest : IntegrationTestBase() {
     }
   }
 
+  @Nested
+  @DisplayName("Delete future pay rates")
+  inner class DeleteFuturePayRate {
+
+    @Test
+    @Sql("classpath:sql/pay-rates/update-pay-rates-future-rates.sql")
+    fun `should delete a future pay rate`() {
+      val id = UUID.fromString("22222222-2222-2222-2222-222222222222")
+      val beforeCount = payRateRepository.count()
+
+      deleteFuturePayRate(id)
+        .expectStatus().isOk
+
+      assertThat(payRateRepository.findById(id)).isEmpty()
+      assertThat(payRateRepository.count()).isEqualTo(beforeCount - 1)
+    }
+
+    @Test
+    @Sql("classpath:sql/pay-rates/update-pay-rates-future-rates.sql")
+    fun `should return bad request when the pay rate start date is not in future`() {
+      val beforeCount = payRateRepository.count()
+
+      with(deleteFuturePayRate(UUID1).badRequest()) {
+        assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+        assertThat(userMessage).isEqualTo("Validation failure: Cannot delete a pay rate with a start date in the past or today")
+        assertThat(developerMessage).isEqualTo("Cannot delete a pay rate with a start date in the past or today")
+      }
+
+      assertThat(payRateRepository.count()).isEqualTo(beforeCount)
+    }
+
+    @Test
+    fun `should return unauthorized when no bearer token`() {
+      deleteFuturePayRate(UUID.randomUUID(), includeBearerAuth = false)
+        .fail(HttpStatus.UNAUTHORIZED)
+    }
+
+    @Test
+    fun `should return forbidden when role is incorrect`() {
+      deleteFuturePayRate(UUID.randomUUID(), roles = listOf("ROLE_NO_PERMISSIONS"))
+        .fail(HttpStatus.FORBIDDEN)
+    }
+
+    @Test
+    fun `should return not found when pay rate id does not exist`() {
+      deleteFuturePayRate(UUID.randomUUID())
+        .fail(HttpStatus.NOT_FOUND)
+    }
+  }
+
   private fun updatePayRate(
     id: UUID,
     request: UpdatePayRateRequest,
@@ -378,6 +428,17 @@ class PayRateIntegrationTest : IntegrationTestBase() {
     .get()
     .uri("/pay-rates/prison/$prisonCode")
     .accept(MediaType.APPLICATION_JSON)
+    .headers(if (includeBearerAuth) setAuthorisation(roles = roles) else noAuthorisation())
+    .exchange()
+
+  private fun deleteFuturePayRate(
+    id: UUID,
+    username: String = USERNAME,
+    roles: List<String> = listOf("ROLE_PRISONER_PAY__PRISONER_PAY_UI"),
+    includeBearerAuth: Boolean = true,
+  ) = webTestClient
+    .delete()
+    .uri("/pay-rates/$id")
     .headers(if (includeBearerAuth) setAuthorisation(roles = roles) else noAuthorisation())
     .exchange()
 }

@@ -1,6 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerpayapi.service
 
+import jakarta.persistence.EntityNotFoundException
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.verify
@@ -16,6 +18,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.util.Optional
 
 class PayRateServiceTest {
   val payRateRepository: PayRateRepository = mock()
@@ -85,5 +88,48 @@ class PayRateServiceTest {
 
     verify(payRateUpdateService).update(UUID1, request)
     assertThat(result).isEqualTo(newPayRate.toModel())
+  }
+
+  @Test
+  fun `should delete a future pay rate`() {
+    val futurePayRate = payRate(id = UUID1, startDate = now.plusDays(10))
+
+    whenever(payRateRepository.findById(UUID1)).thenReturn(Optional.of(futurePayRate))
+
+    payRateService.delete(UUID1)
+
+    verify(payRateRepository).findById(UUID1)
+    verify(payRateRepository).delete(futurePayRate)
+  }
+
+  @Test
+  fun `should throw exception if the pay rate start date is in the past`() {
+    val futurePayRate = payRate(id = UUID1, startDate = now.minusDays(10))
+
+    whenever(payRateRepository.findById(UUID1)).thenReturn(Optional.of(futurePayRate))
+
+    assertThatThrownBy { payRateService.delete(UUID1) }
+      .isInstanceOf(IllegalArgumentException::class.java)
+      .hasMessage("Cannot delete a pay rate with a start date in the past or today")
+  }
+
+  @Test
+  fun `should throw exception if the pay rate start date is today`() {
+    val futurePayRate = payRate(id = UUID1, startDate = now)
+
+    whenever(payRateRepository.findById(UUID1)).thenReturn(Optional.of(futurePayRate))
+
+    assertThatThrownBy { payRateService.delete(UUID1) }
+      .isInstanceOf(IllegalArgumentException::class.java)
+      .hasMessage("Cannot delete a pay rate with a start date in the past or today")
+  }
+
+  @Test
+  fun `should throw exception if a pay rate does not exist`() {
+    whenever(payRateRepository.findById(UUID1)).thenReturn(java.util.Optional.empty())
+
+    assertThatThrownBy { payRateService.delete(UUID1) }
+      .isInstanceOf(EntityNotFoundException::class.java)
+      .hasMessage("Pay Rate $UUID1 not found")
   }
 }
