@@ -37,8 +37,12 @@ generic-service:
   # Environment variables to load into the deployment
   env:
     JAVA_OPTS: "-Xmx512m"
+    JAVA_TOOL_OPTIONS: "-Dhttp.proxyHost=envoy-https-proxy -Dhttp.proxyPort=3128 -Dhttps.proxyHost=envoy-https-proxy -Dhttps.proxyPort=3128 -Dhttp.nonProxyHosts=localhost|127.*|envoy-https-proxy|*.svc|*.cluster.local -Dhttps.nonProxyHosts=localhost|127.*|envoy-https-proxy|*.svc|*.cluster.local"
     SERVER_PORT: "8080"
     APPLICATIONINSIGHTS_CONFIGURATION_FILE: applicationinsights.json
+    HTTP_PROXY: "http://envoy-https-proxy:3128"
+    HTTPS_PROXY: "http://envoy-https-proxy:3128"
+    NO_PROXY: "localhost,127.0.0.1,envoy-https-proxy,.svc,.cluster.local"
 
   # Pre-existing kubernetes secrets to load as environment variables in the deployment.
   # namespace_secrets:
