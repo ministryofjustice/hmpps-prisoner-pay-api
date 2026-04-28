@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "10.2.1"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "10.2.2"
   kotlin("plugin.spring") version "2.3.21"
   kotlin("plugin.jpa") version "2.3.21"
 }
@@ -16,7 +16,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-flyway")
 
   runtimeOnly("org.postgresql:postgresql")
-  runtimeOnly("org.flywaydb:flyway-database-postgresql:12.4.0")
+  runtimeOnly("org.flywaydb:flyway-database-postgresql:12.5.0")
 
   testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:2.2.0-beta")
   testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
