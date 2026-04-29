@@ -13,6 +13,9 @@ spec:
       ttlSecondsAfterFinished: 345600 # 4 days
       backoffLimit: 2
       template:
+        metadata:
+          labels:
+            app: hmpps-prisoner-pay-api-make-payments-job
         spec:
           restartPolicy: Never
           activeDeadlineSeconds: 3600
