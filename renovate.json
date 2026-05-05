@@ -16,6 +16,12 @@
         "**/.github/workflows/**/*.ya?ml",
         "**/.github/actions/**/*.ya?ml"
         ]
+    },
+    {
+      "matchManagers": ["gradle"],
+      "matchPackageNames": ["uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter"],
+      "enabled": false,
+      "description": "Temporarily frozen at 2.2.0-beta until manually re-enabled"
     }
   ]
 }
