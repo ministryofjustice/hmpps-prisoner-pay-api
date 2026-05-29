@@ -7,7 +7,7 @@ plugins {
 }
 
 dependencies {
-  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:2.3.0-beta")
+  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:2.5.0")
   implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:7.3.2")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
   implementation("org.springframework.boot:spring-boot-starter-webclient")
@@ -16,12 +16,12 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-flyway")
 
   runtimeOnly("org.postgresql:postgresql:42.7.11") // temp fix, will need unpinning - addresses CVE-2026-42198"
-  runtimeOnly("org.flywaydb:flyway-database-postgresql:12.6.1")
+  runtimeOnly("org.flywaydb:flyway-database-postgresql:12.6.2")
 
-  testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:2.3.0")
+  testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:2.5.0")
   testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
   testImplementation("org.wiremock:wiremock-standalone:3.13.2")
-  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.42") {
+  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.43") {
     exclude(group = "io.swagger.core.v3")
   }
   testImplementation("org.springframework.boot:spring-boot-testcontainers")
