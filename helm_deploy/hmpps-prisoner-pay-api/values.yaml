@@ -60,7 +60,7 @@ generic-service:
       HMPPS_SQS_QUEUES_PRISONERPAYJOBS_QUEUE_NAME: "sqs_queue_name"
     sqs-prisoner-pay-api-jobs-dlq-secret:
       HMPPS_SQS_QUEUES_PRISONERPAYJOBS_DLQ_NAME: "sqs_queue_name"
-    hmpps-prisoner-pay-api-envoy-https-proxy-env:
+    hmpps-prisoner-pay-ui-envoy-https-proxy-env:
       JAVA_PROXY_TOOL_OPTIONS: "JAVA_PROXY_TOOL_OPTIONS"
       HTTP_PROXY: "HTTP_PROXY"
       HTTPS_PROXY: "HTTPS_PROXY"
