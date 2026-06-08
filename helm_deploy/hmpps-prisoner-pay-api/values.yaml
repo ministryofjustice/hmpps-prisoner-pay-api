@@ -36,12 +36,9 @@ generic-service:
 
   # Environment variables to load into the deployment
   env:
-    JAVA_TOOL_OPTIONS: "-Dhttp.proxyHost=envoy-https-proxy -Dhttp.proxyPort=3128 -Dhttps.proxyHost=envoy-https-proxy -Dhttps.proxyPort=3128 -Dhttp.nonProxyHosts=localhost|127.*|envoy-https-proxy|*.svc|*.cluster.local -Dhttps.nonProxyHosts=localhost|127.*|envoy-https-proxy|*.svc|*.cluster.local -XX:+ExitOnOutOfMemoryError -XX:MaxRAMPercentage=50.0"
+    JAVA_TOOL_OPTIONS: "$(JAVA_PROXY_TOOL_OPTIONS) -XX:+ExitOnOutOfMemoryError -XX:MaxRAMPercentage=50.0"
     SERVER_PORT: "8080"
     APPLICATIONINSIGHTS_CONFIGURATION_FILE: applicationinsights.json
-    HTTP_PROXY: "http://envoy-https-proxy:3128"
-    HTTPS_PROXY: "http://envoy-https-proxy:3128"
-    NO_PROXY: "localhost,127.0.0.1,envoy-https-proxy,.svc,.cluster.local"
 
   # Pre-existing kubernetes secrets to load as environment variables in the deployment.
   # namespace_secrets:
@@ -63,6 +60,12 @@ generic-service:
       HMPPS_SQS_QUEUES_PRISONERPAYJOBS_QUEUE_NAME: "sqs_queue_name"
     sqs-prisoner-pay-api-jobs-dlq-secret:
       HMPPS_SQS_QUEUES_PRISONERPAYJOBS_DLQ_NAME: "sqs_queue_name"
+    # Share the envoy proxy settings defined by the UI's hmpps tf template
+    hmpps-prisoner-pay-ui-envoy-https-proxy-env:
+      JAVA_PROXY_TOOL_OPTIONS: "JAVA_PROXY_TOOL_OPTIONS"
+      HTTP_PROXY: "HTTP_PROXY"
+      HTTPS_PROXY: "HTTPS_PROXY"
+      NO_PROXY: "NO_PROXY"
 
   allowlist:
     groups:
