@@ -15,7 +15,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-data-jpa")
   implementation("org.springframework.boot:spring-boot-starter-flyway")
 
-  runtimeOnly("org.postgresql:postgresql:42.7.12") // temp fix, will need unpinning - addresses CVE-2026-42198"
+  runtimeOnly("org.postgresql:postgresql:42.7.13") // temp fix, will need unpinning - addresses CVE-2026-42198"
   runtimeOnly("org.flywaydb:flyway-database-postgresql:12.10.0")
 
   testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:2.5.0")
