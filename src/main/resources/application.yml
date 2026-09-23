@@ -72,5 +72,5 @@ management:
 
 springdoc:
   swagger-ui:
-    version: 5.32.11
+    version: 5.32.14
     tags-sorter: alpha
