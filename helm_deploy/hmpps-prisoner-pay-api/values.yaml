@@ -13,6 +13,12 @@ generic-service:
     enabled: true
     host: app-hostname.local # override per environment
     tlsSecretName: prisoner-pay-api-cert
+    modsecurity_enabled: true
+    modsecurity_audit_enabled: true
+    modsecurity_github_team: "activities-and-appointments"
+    modsecurity_snippet: |
+      # Default is only GET HEAD POST OPTIONS so need to include PUT.
+      SecAction "id:900200,phase:1,nolog,pass,t:none,setvar:tx.allowed_methods=GET HEAD POST OPTIONS PUT"
     path: /
     annotations:
       # Secure the endpoints related to k8s jobs from outside the Kubernetes ingress
