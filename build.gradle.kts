@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "11.0.10"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "11.0.11"
   kotlin("plugin.spring") version "2.4.20"
   kotlin("plugin.jpa") version "2.4.20"
 }
@@ -16,7 +16,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-flyway")
 
   runtimeOnly("org.postgresql:postgresql:42.7.13") // temp fix, will need unpinning - addresses CVE-2026-42198"
-  runtimeOnly("org.flywaydb:flyway-database-postgresql:13.8.1")
+  runtimeOnly("org.flywaydb:flyway-database-postgresql:13.9.0")
 
   testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:3.0.3")
   testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
