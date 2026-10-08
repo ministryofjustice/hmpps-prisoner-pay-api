@@ -6,6 +6,9 @@ plugins {
   kotlin("plugin.jpa") version "2.4.20"
 }
 
+// CVE-2026-76183 - hmpps gradle plugin pins 11.0.25. Remove this once it pins 11.0.26 or later
+extra["tomcat.version"] = "11.0.26"
+
 dependencies {
   implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:3.0.3")
   implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:7.4.1")
