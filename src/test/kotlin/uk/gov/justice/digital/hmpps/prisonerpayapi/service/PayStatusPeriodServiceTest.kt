@@ -1,6 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerpayapi.service
 
+import jakarta.persistence.EntityNotFoundException
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
@@ -23,6 +25,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.*
+import kotlin.jvm.java
 
 class PayStatusPeriodServiceTest {
   val authenticationHolder: HmppsAuthenticationHolder = mock()
@@ -120,5 +123,43 @@ class PayStatusPeriodServiceTest {
     val result = payStatusPeriodService.update(id, request)
 
     assertThat(result).isEqualTo(entity.toModel())
+  }
+
+  @Test
+  fun `should delete a pay status period when start date is in future`() {
+    val futurePayStatusPeriod = payStatusPeriod(
+      startDate = LocalDate.now(clock).plusDays(10),
+      endDate = LocalDate.now(clock).plusMonths(1),
+    )
+
+    whenever(repository.findById(UUID1)).thenReturn(Optional.of(futurePayStatusPeriod))
+
+    payStatusPeriodService.delete(UUID1)
+
+    verify(repository).findById(UUID1)
+    verify(repository).delete(futurePayStatusPeriod)
+  }
+
+  @Test
+  fun `should throw an exception if the pay status period start date is today or in the past`() {
+    val payStatusPeriod = payStatusPeriod(
+      startDate = LocalDate.now(clock),
+      endDate = LocalDate.now(clock).plusMonths(1),
+    )
+
+    whenever(repository.findById(UUID1)).thenReturn(Optional.of(payStatusPeriod))
+
+    assertThatThrownBy { payStatusPeriodService.delete(UUID1) }
+      .isInstanceOf(IllegalArgumentException::class.java)
+      .hasMessage("Cannot delete a pay status period with a start date in the past or today")
+  }
+
+  @Test
+  fun `should throw an exception if the pay status period does not exist`() {
+    whenever(repository.findById(UUID1)).thenReturn(Optional.empty())
+
+    assertThatThrownBy { payStatusPeriodService.delete(UUID1) }
+      .isInstanceOf(EntityNotFoundException::class.java)
+      .hasMessage("Pay Status Period $UUID1 not found")
   }
 }
