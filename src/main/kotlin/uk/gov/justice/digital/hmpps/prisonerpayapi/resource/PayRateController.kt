@@ -111,6 +111,11 @@ class PayRateController(
         content = [Content(mediaType = "application/json", schema = Schema(implementation = PayRateDto::class))],
       ),
       ApiResponse(
+        responseCode = "400",
+        description = "The pay rate start date is in the past or today and cannot be deleted.",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+      ApiResponse(
         responseCode = "404",
         description = "Pay rate id not found.",
         content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],

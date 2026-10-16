@@ -302,6 +302,67 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
     }
   }
 
+  @Nested
+  @DisplayName("Delete future pay status period")
+  inner class DeleteFuturePayStatusPeriod {
+
+    @Test
+    fun `should delete a future pay status period`() {
+      val futurePayStatusPeriod = createPayStatusPeriod(
+        createPayStatusPeriodRequest(startDate = today().plusDays(10), endDate = today().plusDays(20)),
+      ).success<PayStatusPeriod>()
+
+      deleteFuturePayStatusPeriod(futurePayStatusPeriod.id).expectStatus().isNoContent
+
+      getPayStatusPeriod(futurePayStatusPeriod.id).fail(HttpStatus.NOT_FOUND)
+    }
+
+    @Test
+    fun `should return bad request when the start date is today`() {
+      val futurePayStatusPeriod = createPayStatusPeriod(
+        createPayStatusPeriodRequest(startDate = today(), endDate = today().plusDays(10)),
+      ).success<PayStatusPeriod>()
+
+      with(deleteFuturePayStatusPeriod(futurePayStatusPeriod.id).badRequest()) {
+        assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+        assertThat(userMessage).isEqualTo("Validation failure: Cannot delete a pay status period with a start date in the past or today")
+        assertThat(developerMessage).isEqualTo("Cannot delete a pay status period with a start date in the past or today")
+      }
+
+      getPayStatusPeriod(futurePayStatusPeriod.id).success<PayStatusPeriod>()
+    }
+
+    @Test
+    fun `should return bad request when the start date is in the past`() {
+      val futurePayStatusPeriod = createPayStatusPeriod(
+        createPayStatusPeriodRequest(startDate = today().minusDays(10), endDate = today().plusDays(10)),
+      ).success<PayStatusPeriod>()
+
+      with(deleteFuturePayStatusPeriod(futurePayStatusPeriod.id).badRequest()) {
+        assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+        assertThat(userMessage).isEqualTo("Validation failure: Cannot delete a pay status period with a start date in the past or today")
+        assertThat(developerMessage).isEqualTo("Cannot delete a pay status period with a start date in the past or today")
+      }
+
+      getPayStatusPeriod(futurePayStatusPeriod.id).success<PayStatusPeriod>()
+    }
+
+    @Test
+    fun `should return not found if id does not exist`() {
+      deleteFuturePayStatusPeriod(UUID.randomUUID()).fail(HttpStatus.NOT_FOUND)
+    }
+
+    @Test
+    fun `returns unauthorized when no bearer token`() {
+      deleteFuturePayStatusPeriod(UUID.randomUUID(), includeBearerAuth = false).fail(HttpStatus.UNAUTHORIZED)
+    }
+
+    @Test
+    fun `returns forbidden when role is incorrect`() {
+      deleteFuturePayStatusPeriod(UUID.randomUUID(), roles = listOf("ROLE_NO_PERMISSIONS")).fail(HttpStatus.FORBIDDEN)
+    }
+  }
+
   private fun getPayStatusPeriod(
     id: UUID,
     username: String = USERNAME,
@@ -358,6 +419,18 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
     .patch()
     .uri("/pay-status-periods/$id")
     .bodyValue(request)
+    .accept(MediaType.APPLICATION_JSON)
+    .headers(if (includeBearerAuth) setAuthorisation(roles = roles) else noAuthorisation())
+    .exchange()
+
+  private fun deleteFuturePayStatusPeriod(
+    id: UUID,
+    username: String = USERNAME,
+    roles: List<String> = listOf("ROLE_PRISONER_PAY__PRISONER_PAY_UI"),
+    includeBearerAuth: Boolean = true,
+  ) = webTestClient
+    .delete()
+    .uri("/pay-status-periods/$id")
     .accept(MediaType.APPLICATION_JSON)
     .headers(if (includeBearerAuth) setAuthorisation(roles = roles) else noAuthorisation())
     .exchange()

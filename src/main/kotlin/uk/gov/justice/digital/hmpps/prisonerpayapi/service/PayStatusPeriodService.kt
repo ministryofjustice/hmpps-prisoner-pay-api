@@ -8,6 +8,7 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.CreatePayStatusPe
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.UpdatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.response.PayStatusPeriod
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPeriodRepository
+import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.findOrThrowNotFound
 import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toEntity
 import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toModel
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
@@ -42,4 +43,14 @@ class PayStatusPeriodService(
     .map { it.toModel() }
 
   fun update(id: UUID, request: UpdatePayStatusPeriodRequest): PayStatusPeriod = updateService.update(id, request)
+
+  fun delete(id: UUID) {
+    repository.findOrThrowNotFound(id)
+      .apply {
+        require(startDate.isAfter(LocalDate.now(clock))) {
+          "Cannot delete a pay status period with a start date in the past or today"
+        }
+      }
+      .let { repository.delete(it) }
+  }
 }

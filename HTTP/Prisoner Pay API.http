@@ -46,6 +46,13 @@ Content-Type: application/json
     "removeEndDate": true
 }
 
+### Delete a future pay status period
+
+// @no-log
+DELETE {{ baseUrl }}/pay-status-periods/01a13afc-2138-7680-9d27-56b53570316c
+Authorization: Bearer {{$auth.token("ui-auth-token")}}
+Content-Type: application/json
+
 ### Get a list of pay rates for a given prison
 
 // @no-log
