@@ -5,6 +5,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Assertions.within
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
 import org.mockito.kotlin.any
@@ -115,11 +117,11 @@ class PayRateUpdateServiceTest {
       .hasMessage("A future pay rate already exists")
   }
 
-  @Test
-  fun `should create new pay rate if existing start date is in past and request start date is today or in future and no future rate exists`() {
+  @ParameterizedTest
+  @ValueSource(longs = [1, 10, 365, 3650])
+  fun `should create new pay rate for any future request start date when existing start date is in past and no future rate exists`(daysInFuture: Long) {
     val existing = payRate(startDate = today.minusDays(10), rate = 80)
-    val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 100)
-    val savedPayRate = payRate(id = UUID.randomUUID(), startDate = request.startDate, rate = request.rate)
+    val request = updatePayRateRequest(startDate = today.plusDays(daysInFuture), rate = 100)
 
     whenever(repository.findById(UUID1)).thenReturn(Optional.of(existing))
     whenever(repository.existsByPrisonCodeAndTypeAndStartDateAfter(any(), any(), any()))
@@ -127,7 +129,18 @@ class PayRateUpdateServiceTest {
     whenever(repository.existsByPrisonCodeAndTypeAndStartDate(any(), any(), any()))
       .thenReturn(false)
     whenever(authenticationHolder.username).thenReturn("TEST_USER")
-    whenever(repository.save(any<PayRate>())).thenReturn(savedPayRate)
+    whenever(repository.save(any<PayRate>())).thenAnswer {
+      val saved = it.getArgument<PayRate>(0)
+      payRate(
+        id = UUID.randomUUID(),
+        prisonCode = saved.prisonCode,
+        type = saved.type,
+        startDate = saved.startDate,
+        rate = saved.rate,
+        createdBy = saved.createdBy,
+        createdDateTime = saved.createdDateTime,
+      )
+    }
 
     val now = LocalDateTime.now(clock)
     val result = payRateUpdateService.update(UUID1, request)
@@ -163,18 +176,6 @@ class PayRateUpdateServiceTest {
   }
 
   @Test
-  fun `should throw exception if request start date is beyond 30 days from today`() {
-    val existing = payRate(startDate = today.minusDays(10), rate = 80)
-    val request = updatePayRateRequest(startDate = today.plusDays(31), rate = 100)
-
-    whenever(repository.findById(UUID1)).thenReturn(Optional.of(existing))
-
-    assertThatThrownBy { payRateUpdateService.update(UUID1, request) }
-      .isInstanceOf(IllegalArgumentException::class.java)
-      .hasMessage("Pay rate start date must be today or in the next 30 days")
-  }
-
-  @Test
   fun `should throw exception if request start date is in the past`() {
     val existing = payRate(startDate = today, rate = 80)
     val request = updatePayRateRequest(startDate = today.minusDays(1), rate = 100)
@@ -183,7 +184,7 @@ class PayRateUpdateServiceTest {
 
     assertThatThrownBy { payRateUpdateService.update(UUID1, request) }
       .isInstanceOf(IllegalArgumentException::class.java)
-      .hasMessage("Pay rate start date must be today or in the next 30 days")
+      .hasMessage("Pay rate start date must not be in the past")
   }
 
   @Test
