@@ -60,7 +60,7 @@ class PayRateController(
    * Updates a pay rate.
    *
    * Business rules:
-   * - The start date must be today or within the next 30 days.
+   * - The start date must be today or in the future.
    * - An existing pay rate with a future start date cannot be updated and must be cancelled first.
    * - Only one future pay rate may exist for a given prison code and type.
    * - If the existing pay rate is effective today and the requested start date is today, the pay rate is updated in place.

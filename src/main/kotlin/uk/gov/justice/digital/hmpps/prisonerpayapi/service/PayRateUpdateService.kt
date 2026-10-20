@@ -28,13 +28,12 @@ class PayRateUpdateService(
   fun update(id: UUID, request: UpdatePayRateRequest): PayRateDto {
     val currentUser = authenticationHolder.username ?: SYSTEM_USERNAME
     val today = LocalDate.now(clock)
-    val maxAllowedStartDate = today.plusDays(30)
 
     val existing = payRateRepository.findById(id)
       .orElseThrow { EntityNotFoundException("Pay rate with id '$id' not found") }
 
-    require(request.startDate in today..maxAllowedStartDate) {
-      "Pay rate start date must be today or in the next 30 days"
+    require(request.startDate >= today) {
+      "Pay rate start date must not be in the past"
     }
 
     // If existing rate is in future, ensuring it cannot be updated
