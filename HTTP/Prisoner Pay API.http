@@ -43,7 +43,7 @@ Content-Type: application/json
 
 {
     "endDate": "2026-11-30",
-    "removeEndDate": true
+    "removeEndDate": false
 }
 
 ### Delete a future pay status period

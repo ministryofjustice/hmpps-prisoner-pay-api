@@ -87,7 +87,7 @@ class PayStatusPeriodUpdateServiceTest {
 
   @Test
   fun `should throw an exception if the end date is before the start date`() {
-    val savedEntity = payStatusPeriod(startDate = today().plusDays(30))
+    val savedEntity = payStatusPeriod(startDate = today().plusDays(30), endDate = null)
 
     whenever(repository.findById(UUID1)).thenReturn(Optional.of(savedEntity))
 
