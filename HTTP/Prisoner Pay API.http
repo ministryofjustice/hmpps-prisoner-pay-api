@@ -42,7 +42,7 @@ Authorization: Bearer {{$auth.token("ui-auth-token")}}
 Content-Type: application/json
 
 {
-    "xendDate": "2026-11-30",
+    "endDate": "2026-11-30",
     "removeEndDate": true
 }
 

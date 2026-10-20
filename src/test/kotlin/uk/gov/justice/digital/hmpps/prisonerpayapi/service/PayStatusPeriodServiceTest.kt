@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.UpdatePayStatusPeriodRequest
@@ -43,7 +44,7 @@ class PayStatusPeriodServiceTest {
   }
 
   @Test
-  fun `should save pay status period`() {
+  fun `should save pay status period with start date of today`() {
     val request = createPayStatusPeriodRequest()
 
     val newEntity = payStatusPeriod(
@@ -77,6 +78,68 @@ class PayStatusPeriodServiceTest {
     verify(repository).save(captor.capture())
 
     assertThat(captor.firstValue).usingRecursiveComparison().isEqualTo(newEntity)
+  }
+
+  @Test
+  fun `should throw an exception when creating a pay status period with a start date in the past`() {
+    val request = createPayStatusPeriodRequest(
+      startDate = LocalDate.of(2025, 5, 20),
+      endDate = LocalDate.of(2025, 7, 20),
+    )
+
+    assertThatThrownBy { payStatusPeriodService.create(request) }
+      .isInstanceOf(IllegalArgumentException::class.java)
+      .hasMessage("The start date must not be in the past")
+
+    verify(repository, never()).save(any())
+  }
+
+  @Test
+  fun `should throw an exception when creating a pay status period with an end date in the past`() {
+    val request = createPayStatusPeriodRequest(
+      startDate = LocalDate.now(clock),
+      endDate = LocalDate.now(clock).minusDays(1),
+    )
+
+    assertThatThrownBy { payStatusPeriodService.create(request) }
+      .isInstanceOf(IllegalArgumentException::class.java)
+      .hasMessage("The end date must not be in the past")
+
+    verify(repository, never()).save(any())
+  }
+
+  @Test
+  fun `should throw an exception when creating a pay status period with an end date before the start date`() {
+    val request = createPayStatusPeriodRequest(
+      startDate = LocalDate.now(clock).plusDays(30),
+      endDate = LocalDate.now(clock).plusDays(10),
+    )
+
+    assertThatThrownBy { payStatusPeriodService.create(request) }
+      .isInstanceOf(IllegalArgumentException::class.java)
+      .hasMessage("The end date must not be before the start date")
+
+    verify(repository, never()).save(any())
+  }
+
+  @Test
+  fun `should save a pay status period with a start date in the future`() {
+    val request = createPayStatusPeriodRequest(
+      startDate = LocalDate.now(clock).plusDays(1),
+      endDate = LocalDate.now(clock).plusMonths(1),
+    )
+
+    val savedEntity = payStatusPeriod(
+      startDate = request.startDate,
+      endDate = request.endDate,
+    )
+
+    whenever(repository.save(any<PayStatusPeriod>())).thenReturn(savedEntity)
+
+    val result = payStatusPeriodService.create(request)
+
+    assertThat(result).isEqualTo(savedEntity.toModel())
+    verify(repository).save(any())
   }
 
   @Test

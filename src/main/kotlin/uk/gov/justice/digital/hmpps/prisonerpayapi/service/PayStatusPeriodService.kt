@@ -29,13 +29,25 @@ class PayStatusPeriodService(
     .orElseThrow { EntityNotFoundException("Pay Period Status with id '$id' not found") }
     .toModel()
 
-  fun create(request: CreatePayStatusPeriodRequest) = request
-    // TODO: Should username be mandatory?
-    .toEntity(authenticationHolder.username ?: SYSTEM_USERNAME, clock)
-    .let { entity ->
-      repository.save(entity)
+  fun create(request: CreatePayStatusPeriodRequest): PayStatusPeriod {
+    require(!request.startDate.isBefore(LocalDate.now(clock))) {
+      "The start date must not be in the past"
     }
-    .toModel()
+    require(request.endDate == null || !request.endDate.isBefore(LocalDate.now(clock))) {
+      "The end date must not be in the past"
+    }
+    require(request.endDate == null || !request.endDate.isBefore(request.startDate)) {
+      "The end date must not be before the start date"
+    }
+
+    return request
+      // TODO: Should username be mandatory?
+      .toEntity(authenticationHolder.username ?: SYSTEM_USERNAME, clock)
+      .let { entity ->
+        repository.save(entity)
+      }
+      .toModel()
+  }
 
   @Transactional(readOnly = true)
   fun search(latestStartDate: LocalDate, activeOnly: Boolean, prisonCode: String? = null) = repository
