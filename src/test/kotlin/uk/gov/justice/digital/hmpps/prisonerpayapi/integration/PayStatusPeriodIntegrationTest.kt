@@ -21,7 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPeriodRepository
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.LocalDateTime.now
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.*
 import java.util.Optional.ofNullable
@@ -29,6 +29,8 @@ import java.util.Optional.ofNullable
 class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
   @Autowired
   private lateinit var payStatusPeriodRepository: PayStatusPeriodRepository
+
+  private fun now(): LocalDateTime = LocalDateTime.now(ZoneId.of("Europe/London"))
 
   @Nested
   @DisplayName("Create a new Pay Status Period")
@@ -452,7 +454,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
       startDate = request.startDate,
       endDate = request.endDate,
       createdBy = USERNAME,
-      createdDateTime = LocalDateTime.now(),
+      createdDateTime = now(),
     ),
   )
 

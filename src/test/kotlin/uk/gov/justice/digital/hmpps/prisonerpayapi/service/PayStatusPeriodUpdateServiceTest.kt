@@ -17,11 +17,12 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.today
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusPeriod
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPeriodRepository
 import java.time.Clock
+import java.time.ZoneId
 import java.util.*
 
 class PayStatusPeriodUpdateServiceTest {
   val repository: PayStatusPeriodRepository = mock()
-  val clock: Clock = Clock.systemDefaultZone()
+  val clock: Clock = Clock.system(ZoneId.of("Europe/London"))
 
   val service = PayStatusPeriodUpdateService(repository, clock)
 
