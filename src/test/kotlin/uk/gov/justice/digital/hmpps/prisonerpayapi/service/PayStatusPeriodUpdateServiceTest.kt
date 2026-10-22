@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -15,12 +16,15 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.payStatusPeriod
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.today
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusPeriod
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPeriodRepository
+import java.time.Clock
+import java.time.ZoneId
 import java.util.*
 
 class PayStatusPeriodUpdateServiceTest {
   val repository: PayStatusPeriodRepository = mock()
+  val clock: Clock = Clock.system(ZoneId.of("Europe/London"))
 
-  val service = PayStatusPeriodUpdateService(repository)
+  val service = PayStatusPeriodUpdateService(repository, clock)
 
   val captor = argumentCaptor<PayStatusPeriod>()
 
@@ -69,5 +73,31 @@ class PayStatusPeriodUpdateServiceTest {
       .hasMessage("removeEndDate cannot be true when an endDate is also supplied")
 
     verifyNoInteractions(repository)
+  }
+
+  @Test
+  fun `should throw an exception if the end date is in the past`() {
+    assertThatThrownBy {
+      service.update(UUID1, UpdatePayStatusPeriodRequest(endDate = today().minusDays(1)))
+    }
+      .isInstanceOf(IllegalArgumentException::class.java)
+      .hasMessage("The end date must not be in the past")
+
+    verifyNoInteractions(repository)
+  }
+
+  @Test
+  fun `should throw an exception if the end date is before the start date`() {
+    val savedEntity = payStatusPeriod(startDate = today().plusDays(30), endDate = null)
+
+    whenever(repository.findById(UUID1)).thenReturn(Optional.of(savedEntity))
+
+    assertThatThrownBy {
+      service.update(UUID1, UpdatePayStatusPeriodRequest(endDate = today().plusDays(10)))
+    }
+      .isInstanceOf(IllegalArgumentException::class.java)
+      .hasMessage("The end date must not be before the start date")
+
+    verify(repository, never()).saveAndFlush(any())
   }
 }

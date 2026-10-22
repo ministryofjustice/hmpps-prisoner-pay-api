@@ -35,7 +35,7 @@ class PayStatusPeriod(
 ) {
   var endDate: LocalDate? = endDate
     set(value) {
-      require(value == null || value >= startDate) { "endDate cannot be before startDate" }
+      require(value == null || value >= startDate) { "The end date must not be before the start date" }
 
       field = value
     }

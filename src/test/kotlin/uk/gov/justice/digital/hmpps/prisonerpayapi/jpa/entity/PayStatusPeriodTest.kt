@@ -34,7 +34,7 @@ class PayStatusPeriodTest {
       payStatusPeriod(endDate = today.minusDays(1))
     }
       .isInstanceOf(IllegalArgumentException::class.java)
-      .hasMessage("endDate cannot be before startDate")
+      .hasMessage("The end date must not be before the start date")
   }
 
   @Test
@@ -45,7 +45,7 @@ class PayStatusPeriodTest {
       entity.endDate = today.minusDays(1)
     }
       .isInstanceOf(IllegalArgumentException::class.java)
-      .hasMessage("endDate cannot be before startDate")
+      .hasMessage("The end date must not be before the start date")
   }
 
   @ParameterizedTest(name = "{0} active={1}")

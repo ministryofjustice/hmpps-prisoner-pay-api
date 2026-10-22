@@ -7,23 +7,34 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.UpdatePayStatusPe
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.response.PayStatusPeriod
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPeriodRepository
 import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toModel
+import java.time.Clock
+import java.time.LocalDate
 import java.util.*
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusPeriod as PayStatusPeriodEntity
 
 @Service
 class PayStatusPeriodUpdateService(
   private val repository: PayStatusPeriodRepository,
+  private val clock: Clock,
 ) {
   @Transactional
   fun update(id: UUID, request: UpdatePayStatusPeriodRequest): PayStatusPeriod {
     require(request.endDate == null || !request.removeEndDate) {
       "removeEndDate cannot be true when an endDate is also supplied"
     }
+    require(request.endDate == null || !request.endDate.isBefore(LocalDate.now(clock))) {
+      "The end date must not be in the past"
+    }
 
     return repository
       .findById(id)
       .orElseThrow { EntityNotFoundException("Pay Period Status with id '$id' not found") }
-      .also { applyEndDateUpdate(it, request) }
+      .also { entity ->
+        require(request.endDate == null || !request.endDate.isBefore(entity.startDate)) {
+          "The end date must not be before the start date"
+        }
+        applyEndDateUpdate(entity, request)
+      }
       .let { repository.saveAndFlush(it) }
       .toModel()
   }

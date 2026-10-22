@@ -7,22 +7,31 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.CreatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.UpdatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.response.PayStatusPeriod
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.createPayStatusPeriodRequest
+import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.payStatusPeriod
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.today
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.updatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
+import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPeriodRepository
 import java.time.LocalDate
-import java.time.LocalDateTime.now
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.*
 import java.util.Optional.ofNullable
 
 class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
+  @Autowired
+  private lateinit var payStatusPeriodRepository: PayStatusPeriodRepository
+
+  private fun now(): LocalDateTime = LocalDateTime.now(ZoneId.of("Europe/London"))
+
   @Nested
   @DisplayName("Create a new Pay Status Period")
   inner class CreatePayStatusPeriod {
@@ -62,11 +71,58 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `should return bad request start date is after end date`() {
-      with(createPayStatusPeriod(createPayStatusPeriodRequest(endDate = today().minusDays(1))).badRequest()) {
+    fun `can create a new pay status period with a start date in the future`() {
+      val request = createPayStatusPeriodRequest(startDate = today().plusDays(10))
+
+      val response = createPayStatusPeriod(request).success<PayStatusPeriod>()
+
+      with(response) {
+        assertThat(id).isNotNull()
+        assertThat(prisonerNumber).isEqualTo(request.prisonerNumber)
+        assertThat(type).isEqualTo(request.type)
+        assertThat(startDate).isEqualTo(request.startDate)
+        assertThat(endDate).isEqualTo(request.endDate)
+        assertThat(createdBy).isEqualTo(USERNAME)
+        assertThat(createdDateTime).isCloseTo(now(), within(1, ChronoUnit.SECONDS))
+      }
+    }
+
+    @Test
+    fun `should return bad request when the start date is after end date`() {
+      with(
+        createPayStatusPeriod(
+          createPayStatusPeriodRequest(startDate = today().plusDays(10), endDate = today().plusDays(5)),
+        ).badRequest(),
+      ) {
         assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
-        assertThat(userMessage).isEqualTo("Validation failure: endDate cannot be before startDate")
-        assertThat(developerMessage).isEqualTo("endDate cannot be before startDate")
+        assertThat(userMessage).isEqualTo("Validation failure: The end date must not be before the start date")
+        assertThat(developerMessage).isEqualTo("The end date must not be before the start date")
+      }
+    }
+
+    @Test
+    fun `should return bad request when the end date is in the past`() {
+      with(
+        createPayStatusPeriod(
+          createPayStatusPeriodRequest(startDate = today(), endDate = today().minusDays(1)),
+        ).badRequest(),
+      ) {
+        assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+        assertThat(userMessage).isEqualTo("Validation failure: The end date must not be in the past")
+        assertThat(developerMessage).isEqualTo("The end date must not be in the past")
+      }
+    }
+
+    @Test
+    fun `should return bad request when the start date is in the past`() {
+      with(
+        createPayStatusPeriod(
+          createPayStatusPeriodRequest(startDate = today().minusDays(1), endDate = today().plusDays(10)),
+        ).badRequest(),
+      ) {
+        assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+        assertThat(userMessage).isEqualTo("Validation failure: The start date must not be in the past")
+        assertThat(developerMessage).isEqualTo("The start date must not be in the past")
       }
     }
 
@@ -166,12 +222,12 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
 
     @BeforeEach
     fun setUp() {
-      createPayStatusPeriod(request1).success<PayStatusPeriod>()
-      createPayStatusPeriod(request2).success<PayStatusPeriod>()
-      createPayStatusPeriod(request3).success<PayStatusPeriod>()
-      createPayStatusPeriod(request4).success<PayStatusPeriod>()
-      createPayStatusPeriod(request5).success<PayStatusPeriod>()
-      createPayStatusPeriod(request6).success<PayStatusPeriod>()
+      seedPayStatusPeriod(request1)
+      seedPayStatusPeriod(request2)
+      seedPayStatusPeriod(request3)
+      seedPayStatusPeriod(request4)
+      seedPayStatusPeriod(request5)
+      seedPayStatusPeriod(request6)
     }
 
     @Test
@@ -292,6 +348,32 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
+    fun `should return bad request if the end date is in the past`() {
+      with(createPayStatusPeriod(createPayStatusPeriodRequest()).success<PayStatusPeriod>()) {
+        with(updatePayStatusPeriod(id, updatePayStatusPeriodRequest(endDate = today().minusDays(1))).badRequest()) {
+          assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+          assertThat(userMessage).isEqualTo("Validation failure: The end date must not be in the past")
+          assertThat(developerMessage).isEqualTo("The end date must not be in the past")
+        }
+      }
+    }
+
+    @Test
+    fun `should return bad request if the end date is before the start date`() {
+      with(
+        createPayStatusPeriod(
+          createPayStatusPeriodRequest(startDate = today().plusDays(30), endDate = today().plusDays(40)),
+        ).success<PayStatusPeriod>(),
+      ) {
+        with(updatePayStatusPeriod(id, updatePayStatusPeriodRequest(endDate = today().plusDays(10))).badRequest()) {
+          assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+          assertThat(userMessage).isEqualTo("Validation failure: The end date must not be before the start date")
+          assertThat(developerMessage).isEqualTo("The end date must not be before the start date")
+        }
+      }
+    }
+
+    @Test
     fun `returns unauthorized when no bearer token`() {
       updatePayStatusPeriod(UUID.randomUUID(), updatePayStatusPeriodRequest(), includeBearerAuth = false).fail(HttpStatus.UNAUTHORIZED)
     }
@@ -334,17 +416,17 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `should return bad request when the start date is in the past`() {
-      val futurePayStatusPeriod = createPayStatusPeriod(
+      val futurePayStatusPeriod = seedPayStatusPeriod(
         createPayStatusPeriodRequest(startDate = today().minusDays(10), endDate = today().plusDays(10)),
-      ).success<PayStatusPeriod>()
+      )
 
-      with(deleteFuturePayStatusPeriod(futurePayStatusPeriod.id).badRequest()) {
+      with(deleteFuturePayStatusPeriod(futurePayStatusPeriod.id!!).badRequest()) {
         assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
         assertThat(userMessage).isEqualTo("Validation failure: Cannot delete a pay status period with a start date in the past or today")
         assertThat(developerMessage).isEqualTo("Cannot delete a pay status period with a start date in the past or today")
       }
 
-      getPayStatusPeriod(futurePayStatusPeriod.id).success<PayStatusPeriod>()
+      getPayStatusPeriod(futurePayStatusPeriod.id!!).success<PayStatusPeriod>()
     }
 
     @Test
@@ -362,6 +444,19 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
       deleteFuturePayStatusPeriod(UUID.randomUUID(), roles = listOf("ROLE_NO_PERMISSIONS")).fail(HttpStatus.FORBIDDEN)
     }
   }
+
+  private fun seedPayStatusPeriod(request: CreatePayStatusPeriodRequest) = payStatusPeriodRepository.save(
+    payStatusPeriod(
+      id = null,
+      prisonCode = request.prisonCode,
+      prisonerNumber = request.prisonerNumber,
+      type = request.type,
+      startDate = request.startDate,
+      endDate = request.endDate,
+      createdBy = USERNAME,
+      createdDateTime = now(),
+    ),
+  )
 
   private fun getPayStatusPeriod(
     id: UUID,
