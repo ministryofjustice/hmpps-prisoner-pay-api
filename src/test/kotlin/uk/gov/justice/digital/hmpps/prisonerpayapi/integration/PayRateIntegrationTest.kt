@@ -142,6 +142,31 @@ class PayRateIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
+    @Sql("classpath:sql/pay-rates/update-pay-rates-future-rates.sql")
+    fun `should promote a scheduled pay rate to current once its start date is reached`() {
+      val scheduledId = UUID.fromString("22222222-2222-2222-2222-222222222222")
+
+      getCurrentAndFuturePayRates(prisonCode = RISLEY_PRISON_CODE)
+        .successList<PayRateDto>()
+        .let { payRates ->
+          assertThat(payRates.single { !it.startDate.isAfter(today) }.id).isEqualTo(UUID1)
+          assertThat(payRates.single { it.startDate.isAfter(today) }.id).isEqualTo(scheduledId)
+        }
+
+      whenever(clock.instant()).thenReturn(Instant.parse("2026-02-21T00:00:00.00Z"))
+      today = LocalDate.now(clock)
+
+      getCurrentAndFuturePayRates(prisonCode = RISLEY_PRISON_CODE)
+        .successList<PayRateDto>()
+        .single()
+        .let { currentRate ->
+          assertThat(currentRate.id).isEqualTo(scheduledId)
+          assertThat(currentRate.startDate).isEqualTo(LocalDate.of(2026, 2, 20))
+          assertThat(currentRate.startDate).isBeforeOrEqualTo(today)
+        }
+    }
+
+    @Test
     fun `should return empty list when no past, current or future pay rates exist`() {
       assertThat(getCurrentAndFuturePayRates(prisonCode = RISLEY_PRISON_CODE).successList<PayRateDto>()).isEmpty()
     }
@@ -302,6 +327,41 @@ class PayRateIntegrationTest : IntegrationTestBase() {
 
     @Test
     @Sql("classpath:sql/pay-rates/update-pay-rates-future-rates.sql")
+    fun `should update the current pay rate in place while preserving an existing future pay rate`() {
+      val scheduledId = UUID.fromString("22222222-2222-2222-2222-222222222222")
+      val beforeCount = payRateRepository.count()
+
+      val request = updatePayRateRequest(startDate = today, rate = 150)
+
+      updatePayRate(UUID1, request)
+        .success<PayRateDto>()
+        .also {
+          assertThat(it.id).isEqualTo(UUID1)
+          assertThat(it.startDate).isEqualTo(today)
+          assertThat(it.rate).isEqualTo(150)
+          assertThat(it.updatedBy).isEqualTo(USERNAME)
+        }
+
+      assertThat(payRateRepository.count()).isEqualTo(beforeCount)
+      assertThat(payRateRepository.findById(scheduledId)).isPresent
+
+      getCurrentAndFuturePayRates(prisonCode = RISLEY_PRISON_CODE)
+        .successList<PayRateDto>()
+        .let { payRates ->
+          assertThat(payRates).hasSize(2)
+
+          val currentRate = payRates.single { !it.startDate.isAfter(today) }
+          assertThat(currentRate.id).isEqualTo(UUID1)
+          assertThat(currentRate.rate).isEqualTo(150)
+
+          val futureRate = payRates.single { it.startDate.isAfter(today) }
+          assertThat(futureRate.id).isEqualTo(scheduledId)
+          assertThat(futureRate.startDate).isEqualTo(LocalDate.of(2026, 2, 20))
+        }
+    }
+
+    @Test
+    @Sql("classpath:sql/pay-rates/update-pay-rates-future-rates.sql")
     fun `should return bad request when existing start date is today and request start date is in future and future rate exists`() {
       val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 100)
 
@@ -401,6 +461,36 @@ class PayRateIntegrationTest : IntegrationTestBase() {
       }
 
       assertThat(payRateRepository.count()).isEqualTo(beforeCount)
+    }
+
+    @Test
+    @Sql("classpath:sql/pay-rates/update-pay-rates-future-rates.sql")
+    fun `should allow scheduling a replacement future pay rate after deleting the existing one`() {
+      val scheduledId = UUID.fromString("22222222-2222-2222-2222-222222222222")
+
+      deleteFuturePayRate(scheduledId)
+        .expectStatus().isOk
+      assertThat(payRateRepository.findById(scheduledId)).isEmpty()
+
+      val replacementStartDate = today.plusDays(40)
+      val request = updatePayRateRequest(startDate = replacementStartDate, rate = 150)
+
+      val replacement = updatePayRate(UUID1, request)
+        .success<PayRateDto>()
+        .also {
+          assertThat(it.id).isNotEqualTo(UUID1)
+          assertThat(it.id).isNotEqualTo(scheduledId)
+          assertThat(it.startDate).isEqualTo(replacementStartDate)
+          assertThat(it.rate).isEqualTo(150)
+        }
+
+      getCurrentAndFuturePayRates(prisonCode = RISLEY_PRISON_CODE)
+        .successList<PayRateDto>()
+        .let { payRates ->
+          assertThat(payRates).hasSize(2)
+          assertThat(payRates.single { !it.startDate.isAfter(today) }.id).isEqualTo(UUID1)
+          assertThat(payRates.single { it.startDate.isAfter(today) }.id).isEqualTo(replacement.id)
+        }
     }
 
     @Test

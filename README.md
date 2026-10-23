@@ -6,6 +6,22 @@
 
 This service allows for the management of payments for prisoners.
 
+## Pay rate rules
+
+Pay rate update and delete validation is selected by `PayStatusType` through
+`PayRateRulesRegistry`. Spring injects all `PayRateRules` components; the registry
+rejects duplicate or missing implementations at startup.
+
+`LongTermSickPayRateRules` inherits shared date validation from `BasePayRateRules`.
+The shared services retain persistence, duplicate checks and the one-future-rate
+rule per prison and pay type. Updates effective today may update today's row or
+create a new row; future changes create a new row. Only future rates can be
+hard-deleted. This does not introduce lifecycle statuses or change API contracts.
+
+When adding a pay type, register a `PayRateRules` component declaring that type.
+Reuse the base validations where applicable and override only differing rules.
+Assignment eligibility and payment calculation are separate from pay rate rules.
+
 ## Building the project
 
 Tools required:

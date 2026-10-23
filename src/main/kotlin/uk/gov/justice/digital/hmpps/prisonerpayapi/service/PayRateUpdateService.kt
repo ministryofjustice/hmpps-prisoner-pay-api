@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayRateRepository
 import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toEntity
 import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toModel
+import uk.gov.justice.digital.hmpps.prisonerpayapi.service.payrate.PayRateRulesRegistry
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.Clock
 import java.time.LocalDate
@@ -22,6 +23,7 @@ class PayRateUpdateService(
   private val authenticationHolder: HmppsAuthenticationHolder,
   private val payRateRepository: PayRateRepository,
   private val clock: Clock,
+  private val payRateRulesRegistry: PayRateRulesRegistry,
 ) {
 
   @Transactional
@@ -32,12 +34,7 @@ class PayRateUpdateService(
     val existing = payRateRepository.findById(id)
       .orElseThrow { EntityNotFoundException("Pay rate with id '$id' not found") }
 
-    require(request.startDate >= today) {
-      "Pay rate start date must not be in the past"
-    }
-
-    // If existing rate is in future, ensuring it cannot be updated
-    require(existing.startDate <= today) { "Future pay rate must be cancelled before updating" }
+    payRateRulesRegistry.rulesFor(existing.type).validateUpdateRequest(existing, request, today)
 
     // If request start date is in future, ensuring only one future rate exists
     if (request.startDate > today &&

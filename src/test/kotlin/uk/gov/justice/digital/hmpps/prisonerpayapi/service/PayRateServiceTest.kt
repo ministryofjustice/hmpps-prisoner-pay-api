@@ -3,16 +3,24 @@ package uk.gov.justice.digital.hmpps.prisonerpayapi.service
 import jakarta.persistence.EntityNotFoundException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.RISLEY_PRISON_CODE
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.UUID1
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.payRate
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.updatePayRateRequest
+import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayRateRepository
 import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toModel
+import uk.gov.justice.digital.hmpps.prisonerpayapi.service.payrate.PayRateRules
+import uk.gov.justice.digital.hmpps.prisonerpayapi.service.payrate.PayRateRulesRegistry
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -25,9 +33,16 @@ class PayRateServiceTest {
   val payRateUpdateService: PayRateUpdateService = mock()
   val clock: Clock = Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneId.of("Europe/London"))
 
-  val payRateService = PayRateService(payRateRepository, payRateUpdateService, clock)
+  val rules: PayRateRules = mock()
+  val rulesRegistry: PayRateRulesRegistry = mock()
+  val payRateService = PayRateService(payRateRepository, payRateUpdateService, clock, rulesRegistry)
 
   val now: LocalDate = LocalDate.now(clock)
+
+  @BeforeEach
+  fun setupRules() {
+    whenever(rulesRegistry.rulesFor(PayStatusType.LONG_TERM_SICK)).thenReturn(rules)
+  }
 
   @Test
   fun `should return currently active and future pay rates for a given prison`() {
@@ -91,37 +106,34 @@ class PayRateServiceTest {
   }
 
   @Test
-  fun `should delete a future pay rate`() {
+  fun `should validate using the selected strategy before deleting a pay rate`() {
     val futurePayRate = payRate(id = UUID1, startDate = now.plusDays(10))
 
     whenever(payRateRepository.findById(UUID1)).thenReturn(Optional.of(futurePayRate))
 
     payRateService.delete(UUID1)
 
-    verify(payRateRepository).findById(UUID1)
-    verify(payRateRepository).delete(futurePayRate)
+    inOrder(payRateRepository, rulesRegistry, rules) {
+      verify(payRateRepository).findById(UUID1)
+      verify(rulesRegistry).rulesFor(futurePayRate.type)
+      verify(rules).validateDeleteRequest(futurePayRate, now)
+      verify(payRateRepository).delete(futurePayRate)
+    }
   }
 
   @Test
-  fun `should throw exception if the pay rate start date is in the past`() {
-    val futurePayRate = payRate(id = UUID1, startDate = now.minusDays(10))
-
-    whenever(payRateRepository.findById(UUID1)).thenReturn(Optional.of(futurePayRate))
-
-    assertThatThrownBy { payRateService.delete(UUID1) }
-      .isInstanceOf(IllegalArgumentException::class.java)
-      .hasMessage("Cannot delete a pay rate with a start date in the past or today")
-  }
-
-  @Test
-  fun `should throw exception if the pay rate start date is today`() {
-    val futurePayRate = payRate(id = UUID1, startDate = now)
-
-    whenever(payRateRepository.findById(UUID1)).thenReturn(Optional.of(futurePayRate))
+  fun `should not delete when the selected strategy rejects deletion`() {
+    val existing = payRate(id = UUID1, startDate = now.plusDays(1))
+    whenever(payRateRepository.findById(UUID1)).thenReturn(Optional.of(existing))
+    doThrow(IllegalArgumentException("Deletion rejected by strategy"))
+      .whenever(rules).validateDeleteRequest(existing, now)
 
     assertThatThrownBy { payRateService.delete(UUID1) }
       .isInstanceOf(IllegalArgumentException::class.java)
-      .hasMessage("Cannot delete a pay rate with a start date in the past or today")
+      .hasMessage("Deletion rejected by strategy")
+
+    verify(rules).validateDeleteRequest(existing, now)
+    verify(payRateRepository, never()).delete(any())
   }
 
   @Test
