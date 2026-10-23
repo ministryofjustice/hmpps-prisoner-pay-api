@@ -19,7 +19,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-flyway")
 
   runtimeOnly("org.postgresql:postgresql:42.7.14") // temp fix, will need unpinning - addresses CVE-2026-42198"
-  runtimeOnly("org.flywaydb:flyway-database-postgresql:13.11.1")
+  runtimeOnly("org.flywaydb:flyway-database-postgresql")
 
   testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:3.0.3")
   testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
