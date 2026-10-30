@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPerio
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.findOrThrowNotFound
 import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toEntity
 import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toModel
+import uk.gov.justice.digital.hmpps.prisonerpayapi.service.paystatusperiod.PayStatusPeriodRulesRegistry
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.Clock
 import java.time.LocalDate
@@ -23,6 +24,7 @@ class PayStatusPeriodService(
   private val repository: PayStatusPeriodRepository,
   private val updateService: PayStatusPeriodUpdateService,
   private val clock: Clock,
+  private val payStatusPeriodRulesRegistry: PayStatusPeriodRulesRegistry,
 ) {
   fun getById(id: UUID) = repository
     .findById(id)
@@ -30,15 +32,7 @@ class PayStatusPeriodService(
     .toModel()
 
   fun create(request: CreatePayStatusPeriodRequest): PayStatusPeriod {
-    require(!request.startDate.isBefore(LocalDate.now(clock))) {
-      "The start date must not be in the past"
-    }
-    require(request.endDate == null || !request.endDate.isBefore(LocalDate.now(clock))) {
-      "The end date must not be in the past"
-    }
-    require(request.endDate == null || !request.endDate.isBefore(request.startDate)) {
-      "The end date must not be before the start date"
-    }
+    payStatusPeriodRulesRegistry.rulesFor(request.type).validateCreateRequest(request, LocalDate.now(clock))
 
     return request
       // TODO: Should username be mandatory?
@@ -51,7 +45,7 @@ class PayStatusPeriodService(
 
   @Transactional(readOnly = true)
   fun search(latestStartDate: LocalDate, activeOnly: Boolean, prisonCode: String? = null) = repository
-    .search(latestStartDate, activeOnly, prisonCode)
+    .search(latestStartDate, activeOnly, prisonCode, LocalDate.now(clock))
     .map { it.toModel() }
 
   fun update(id: UUID, request: UpdatePayStatusPeriodRequest): PayStatusPeriod = updateService.update(id, request)
@@ -59,9 +53,7 @@ class PayStatusPeriodService(
   fun delete(id: UUID) {
     repository.findOrThrowNotFound(id)
       .apply {
-        require(startDate.isAfter(LocalDate.now(clock))) {
-          "Cannot delete a pay status period with a start date in the past or today"
-        }
+        payStatusPeriodRulesRegistry.rulesFor(type).validateDeleteRequest(this, LocalDate.now(clock))
       }
       .let { repository.delete(it) }
   }

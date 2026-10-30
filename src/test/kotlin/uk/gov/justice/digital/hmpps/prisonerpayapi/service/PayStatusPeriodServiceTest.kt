@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -17,8 +19,11 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.createPayStatusPeriodR
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.payStatusPeriod
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.today
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusPeriod
+import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPeriodRepository
 import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toModel
+import uk.gov.justice.digital.hmpps.prisonerpayapi.service.paystatusperiod.PayStatusPeriodRules
+import uk.gov.justice.digital.hmpps.prisonerpayapi.service.paystatusperiod.PayStatusPeriodRulesRegistry
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.Clock
 import java.time.Instant
@@ -26,7 +31,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.*
-import kotlin.jvm.java
 
 class PayStatusPeriodServiceTest {
   val authenticationHolder: HmppsAuthenticationHolder = mock()
@@ -34,13 +38,18 @@ class PayStatusPeriodServiceTest {
   val updateService: PayStatusPeriodUpdateService = mock()
   val clock: Clock = Clock.fixed(Instant.parse("2025-07-23T12:34:56Z"), ZoneId.of("Europe/London"))
 
-  val payStatusPeriodService = PayStatusPeriodService(authenticationHolder, repository, updateService, clock)
+  val rules: PayStatusPeriodRules = mock()
+  val rulesRegistry: PayStatusPeriodRulesRegistry = mock()
+
+  val payStatusPeriodService = PayStatusPeriodService(authenticationHolder, repository, updateService, clock, rulesRegistry)
 
   val captor = argumentCaptor<PayStatusPeriod>()
+  val today = LocalDate.now(clock)
 
   @BeforeEach
   fun setUp() {
     whenever(authenticationHolder.username).thenReturn("BLOGGSJ")
+    whenever(rulesRegistry.rulesFor(PayStatusType.LONG_TERM_SICK)).thenReturn(rules)
   }
 
   @Test
@@ -75,50 +84,28 @@ class PayStatusPeriodServiceTest {
 
     assertThat(result).isEqualTo(savedEntity.toModel())
 
+    inOrder(repository, rulesRegistry, rules) {
+      verify(rulesRegistry).rulesFor(request.type)
+      verify(rules).validateCreateRequest(request, today)
+      verify(repository).save(any())
+    }
+
     verify(repository).save(captor.capture())
 
     assertThat(captor.firstValue).usingRecursiveComparison().isEqualTo(newEntity)
   }
 
   @Test
-  fun `should throw an exception when creating a pay status period with a start date in the past`() {
-    val request = createPayStatusPeriodRequest(
-      startDate = LocalDate.of(2025, 5, 20),
-      endDate = LocalDate.of(2025, 7, 20),
-    )
+  fun `should not save when the selected strategy rejects create`() {
+    val request = createPayStatusPeriodRequest()
+    doThrow(IllegalArgumentException("Create rejected by strategy"))
+      .whenever(rules).validateCreateRequest(request, today)
 
     assertThatThrownBy { payStatusPeriodService.create(request) }
       .isInstanceOf(IllegalArgumentException::class.java)
-      .hasMessage("The start date must not be in the past")
+      .hasMessage("Create rejected by strategy")
 
-    verify(repository, never()).save(any())
-  }
-
-  @Test
-  fun `should throw an exception when creating a pay status period with an end date in the past`() {
-    val request = createPayStatusPeriodRequest(
-      startDate = LocalDate.now(clock),
-      endDate = LocalDate.now(clock).minusDays(1),
-    )
-
-    assertThatThrownBy { payStatusPeriodService.create(request) }
-      .isInstanceOf(IllegalArgumentException::class.java)
-      .hasMessage("The end date must not be in the past")
-
-    verify(repository, never()).save(any())
-  }
-
-  @Test
-  fun `should throw an exception when creating a pay status period with an end date before the start date`() {
-    val request = createPayStatusPeriodRequest(
-      startDate = LocalDate.now(clock).plusDays(30),
-      endDate = LocalDate.now(clock).plusDays(10),
-    )
-
-    assertThatThrownBy { payStatusPeriodService.create(request) }
-      .isInstanceOf(IllegalArgumentException::class.java)
-      .hasMessage("The end date must not be before the start date")
-
+    verify(rules).validateCreateRequest(request, today)
     verify(repository, never()).save(any())
   }
 
@@ -139,6 +126,7 @@ class PayStatusPeriodServiceTest {
     val result = payStatusPeriodService.create(request)
 
     assertThat(result).isEqualTo(savedEntity.toModel())
+    verify(rules).validateCreateRequest(request, today)
     verify(repository).save(any())
   }
 
@@ -162,11 +150,11 @@ class PayStatusPeriodServiceTest {
       ),
     )
 
-    whenever(repository.search(any(), any(), any())).thenReturn(expectedEntities)
+    whenever(repository.search(any(), any(), any(), any())).thenReturn(expectedEntities)
 
     val results = payStatusPeriodService.search(LocalDate.of(2025, 7, 23), true, "RSI")
 
-    verify(repository).search(LocalDate.of(2025, 7, 23), true, "RSI")
+    verify(repository).search(LocalDate.of(2025, 7, 23), true, "RSI", LocalDate.of(2025, 7, 23))
 
     assertThat(results).usingRecursiveComparison().isEqualTo(expectedEntities.map { it.toModel() })
   }
@@ -189,7 +177,7 @@ class PayStatusPeriodServiceTest {
   }
 
   @Test
-  fun `should delete a pay status period when start date is in future`() {
+  fun `should delete a future pay status period`() {
     val futurePayStatusPeriod = payStatusPeriod(
       startDate = LocalDate.now(clock).plusDays(10),
       endDate = LocalDate.now(clock).plusMonths(1),
@@ -199,22 +187,28 @@ class PayStatusPeriodServiceTest {
 
     payStatusPeriodService.delete(UUID1)
 
-    verify(repository).findById(UUID1)
-    verify(repository).delete(futurePayStatusPeriod)
+    inOrder(repository, rulesRegistry, rules) {
+      verify(repository).findById(UUID1)
+      verify(rulesRegistry).rulesFor(futurePayStatusPeriod.type)
+      verify(rules).validateDeleteRequest(futurePayStatusPeriod, today)
+      verify(repository).delete(futurePayStatusPeriod)
+    }
   }
 
   @Test
-  fun `should throw an exception if the pay status period start date is today or in the past`() {
-    val payStatusPeriod = payStatusPeriod(
-      startDate = LocalDate.now(clock),
-      endDate = LocalDate.now(clock).plusMonths(1),
-    )
+  fun `should not delete when the selected strategy rejects delete`() {
+    val existing = payStatusPeriod(startDate = LocalDate.now(clock))
 
-    whenever(repository.findById(UUID1)).thenReturn(Optional.of(payStatusPeriod))
+    whenever(repository.findById(UUID1)).thenReturn(Optional.of(existing))
+    doThrow(IllegalArgumentException("Delete rejected by strategy"))
+      .whenever(rules).validateDeleteRequest(existing, today)
 
     assertThatThrownBy { payStatusPeriodService.delete(UUID1) }
       .isInstanceOf(IllegalArgumentException::class.java)
-      .hasMessage("Cannot delete a pay status period with a start date in the past or today")
+      .hasMessage("Delete rejected by strategy")
+
+    verify(rules).validateDeleteRequest(existing, today)
+    verify(repository, never()).delete(any())
   }
 
   @Test
