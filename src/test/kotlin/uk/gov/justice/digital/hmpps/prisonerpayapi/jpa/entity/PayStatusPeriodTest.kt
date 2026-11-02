@@ -5,6 +5,8 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.EnumSource
+import uk.gov.justice.digital.hmpps.prisonerpayapi.common.TimeSlot
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.payStatusPeriod
 import java.time.LocalDate
 
@@ -87,5 +89,36 @@ class PayStatusPeriodTest {
     val entity = payStatusPeriod(startDate = startDate, endDate = null)
 
     assertThat(entity.isActiveOn(endDate.plusDays(1))).isTrue()
+  }
+
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should map each pay status to its corresponding payment type`(type: PayStatusType) {
+    assertThat(type.paymentType.name).isEqualTo(type.name)
+  }
+
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should return AM and PM sessions for sick periods`(type: PayStatusType) {
+    assertThat(payStatusPeriod(type = type).applicableSessions()).containsExactly(TimeSlot.AM, TimeSlot.PM)
+  }
+
+  @ParameterizedTest
+  @CsvSource("2025-07-20", "2025-07-21", "2025-07-22", "2025-07-23", "2025-07-24", "2025-07-26")
+  fun `STS periods should not be active for payments`(date: LocalDate) {
+    val entity = payStatusPeriod(type = PayStatusType.SHORT_TERM_SICK, startDate = startDate, endDate = endDate)
+    val openEndedEntity = payStatusPeriod(type = PayStatusType.SHORT_TERM_SICK, startDate = startDate, endDate = null)
+
+    assertThat(entity.isActiveOn(date)).isFalse()
+    assertThat(openEndedEntity.isActiveOn(date)).isFalse()
+  }
+
+  @Test
+  fun `open ended LTS periods should be active on future weekdays but not weekends`() {
+    val entity = payStatusPeriod(type = PayStatusType.LONG_TERM_SICK, startDate = startDate, endDate = null)
+
+    assertThat(entity.isActiveOn(LocalDate.of(2026, 1, 2))).isTrue()
+    assertThat(entity.isActiveOn(LocalDate.of(2026, 1, 3))).isFalse()
+    assertThat(entity.isActiveOn(LocalDate.of(2026, 1, 4))).isFalse()
   }
 }

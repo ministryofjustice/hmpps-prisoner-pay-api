@@ -3,24 +3,28 @@ package uk.gov.justice.digital.hmpps.prisonerpayapi.service.paystatusperiod
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.CreatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusPeriod
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import uk.gov.justice.digital.hmpps.prisonerpayapi.service.paystatusperiod.rules.LongTermSickPayStatusPeriodRules
+import uk.gov.justice.digital.hmpps.prisonerpayapi.service.paystatusperiod.rules.ShortTermSickPayStatusPeriodRules
 import java.time.LocalDate
 
 class PayStatusPeriodRulesRegistryTest {
-  @Test
-  fun `should return the registered LTS strategy`() {
-    val rules = LongTermSickPayStatusPeriodRules()
-    val registry = PayStatusPeriodRulesRegistry(listOf(rules))
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should return the registered strategy for each type`(type: PayStatusType) {
+    val allRules = listOf(LongTermSickPayStatusPeriodRules(), ShortTermSickPayStatusPeriodRules())
+    val registry = PayStatusPeriodRulesRegistry(allRules)
 
-    assertThat(registry.rulesFor(PayStatusType.LONG_TERM_SICK)).isSameAs(rules)
+    assertThat(registry.rulesFor(type)).isSameAs(allRules.single { it.payType() == type })
   }
 
-  @Test
-  fun `should reject missing strategies at construction`() {
-    val missingType = PayStatusType.LONG_TERM_SICK
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should reject missing strategies at construction`(missingType: PayStatusType) {
     val rulesForAllOtherTypes = PayStatusType.entries
       .filter { it != missingType }
       .map { stubRulesFor(it) }

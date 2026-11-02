@@ -18,21 +18,22 @@ class SpecialPaymentsServiceTest {
   val specialPaymentsService = SpecialPaymentsService(clock)
 
   @Test
-  fun `should calculate special payments for a prisoner`() {
-    val eventDate = LocalDate.of(2025, 1, 16)
+  fun `should calculate special payments for an LTS prisoner`() {
+    val type = PayStatusType.LONG_TERM_SICK
+    val expectedEventDate = LocalDate.of(2025, 1, 16)
 
-    val payStatusPeriod = payStatusPeriod(startDate = eventDate.minusDays(1), endDate = null)
+    val payStatusPeriod = payStatusPeriod(type = type, startDate = expectedEventDate.minusDays(1), endDate = null)
 
-    val payRate = payRate(startDate = eventDate.minusDays(1))
+    val payRates = mapOf(type to payRate(type = type, startDate = expectedEventDate.minusDays(1), rate = 99))
 
-    val result = specialPaymentsService.calcPayments(eventDate, listOf(payStatusPeriod), mapOf(PayStatusType.LONG_TERM_SICK to payRate))
+    val result = specialPaymentsService.calcPayments(expectedEventDate, listOf(payStatusPeriod), payRates)
 
     assertThat(result).hasSize(2)
 
     with(result[0]) {
       assertThat(prisonCode).isEqualTo(payStatusPeriod.prisonCode)
       assertThat(prisonerNumber).isEqualTo(payStatusPeriod.prisonerNumber)
-      assertThat(eventDate).isEqualTo(eventDate)
+      assertThat(eventDate).isEqualTo(expectedEventDate)
       assertThat(timeSlot).isEqualTo(TimeSlot.AM)
       assertThat(paymentType).isEqualTo(payStatusPeriod.type.paymentType)
       assertThat(paymentDateTime).isEqualTo(LocalDateTime.now(clock))
@@ -42,7 +43,7 @@ class SpecialPaymentsServiceTest {
     with(result[1]) {
       assertThat(prisonCode).isEqualTo(payStatusPeriod.prisonCode)
       assertThat(prisonerNumber).isEqualTo(payStatusPeriod.prisonerNumber)
-      assertThat(eventDate).isEqualTo(eventDate)
+      assertThat(eventDate).isEqualTo(expectedEventDate)
       assertThat(timeSlot).isEqualTo(TimeSlot.PM)
       assertThat(paymentType).isEqualTo(payStatusPeriod.type.paymentType)
       assertThat(paymentDateTime).isEqualTo(LocalDateTime.now(clock))
@@ -76,23 +77,25 @@ class SpecialPaymentsServiceTest {
   }
 
   @Test
-  fun `should be no payments if the special payment is not active on the date`() {
+  fun `should be no payments if the LTS period is not active on the date`() {
+    val type = PayStatusType.LONG_TERM_SICK
     val eventDate = LocalDate.of(2025, 1, 18) // Weekend
 
-    val payStatusPeriod = payStatusPeriod(startDate = eventDate.plusDays(1), endDate = null)
+    val payStatusPeriod = payStatusPeriod(type = type, startDate = eventDate.plusDays(1), endDate = null)
 
-    val payRate = payRate(startDate = eventDate.minusDays(1))
+    val payRate = payRate(type = type, startDate = eventDate.minusDays(1))
 
-    val result = specialPaymentsService.calcPayments(eventDate, listOf(payStatusPeriod), mapOf(PayStatusType.LONG_TERM_SICK to payRate))
+    val result = specialPaymentsService.calcPayments(eventDate, listOf(payStatusPeriod), mapOf(type to payRate))
 
     assertThat(result).isEmpty()
   }
 
   @Test
-  fun `should be no payments if no pay rate exists`() {
+  fun `should be no payments if no LTS pay rate exists`() {
+    val type = PayStatusType.LONG_TERM_SICK
     val eventDate = LocalDate.of(2025, 1, 16)
 
-    val payStatusPeriod = payStatusPeriod(startDate = eventDate.minusDays(1), endDate = null)
+    val payStatusPeriod = payStatusPeriod(type = type, startDate = eventDate.minusDays(1), endDate = null)
 
     val result = specialPaymentsService.calcPayments(eventDate, listOf(payStatusPeriod), emptyMap())
 
