@@ -53,8 +53,7 @@ class PayStatusPeriod(
 
     return isInDateRange &&
       when (type) {
-        PayStatusType.LONG_TERM_SICK -> date.isWeekDay
-        PayStatusType.SHORT_TERM_SICK -> false
+        PayStatusType.LONG_TERM_SICK, PayStatusType.SHORT_TERM_SICK -> date.isWeekDay
       }
   }
 }

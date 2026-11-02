@@ -104,18 +104,33 @@ class PayStatusPeriodTest {
   }
 
   @ParameterizedTest
-  @CsvSource("2025-07-20", "2025-07-21", "2025-07-22", "2025-07-23", "2025-07-24", "2025-07-26")
-  fun `STS periods should not be active for payments`(date: LocalDate) {
+  @CsvSource(
+    "2025-07-18, false, false",
+    "2025-07-20, false, false",
+    "2025-07-21, true, true",
+    "2025-07-22, true, true",
+    "2025-07-23, true, true",
+    "2025-07-24, false, true",
+    "2025-07-26, false, false",
+    "2025-07-27, false, false",
+    "2025-07-28, false, true",
+  )
+  fun `STS periods should be active on weekdays within the inclusive date range`(
+    date: LocalDate,
+    expectedWithEndDate: Boolean,
+    expectedWithoutEndDate: Boolean,
+  ) {
     val entity = payStatusPeriod(type = PayStatusType.SHORT_TERM_SICK, startDate = startDate, endDate = endDate)
     val openEndedEntity = payStatusPeriod(type = PayStatusType.SHORT_TERM_SICK, startDate = startDate, endDate = null)
 
-    assertThat(entity.isActiveOn(date)).isFalse()
-    assertThat(openEndedEntity.isActiveOn(date)).isFalse()
+    assertThat(entity.isActiveOn(date)).isEqualTo(expectedWithEndDate)
+    assertThat(openEndedEntity.isActiveOn(date)).isEqualTo(expectedWithoutEndDate)
   }
 
-  @Test
-  fun `open ended LTS periods should be active on future weekdays but not weekends`() {
-    val entity = payStatusPeriod(type = PayStatusType.LONG_TERM_SICK, startDate = startDate, endDate = null)
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `open ended sick periods should be active on future weekdays but not weekends`(type: PayStatusType) {
+    val entity = payStatusPeriod(type = type, startDate = startDate, endDate = null)
 
     assertThat(entity.isActiveOn(LocalDate.of(2026, 1, 2))).isTrue()
     assertThat(entity.isActiveOn(LocalDate.of(2026, 1, 3))).isFalse()

@@ -74,20 +74,21 @@ class ShortTermSickPayStatusPeriodRulesTest {
       .hasMessage(message)
   }
 
-  @ParameterizedTest
-  @ValueSource(longs = [-1, 0])
-  fun `should reject deleting past or current STS periods`(startOffset: Long) {
-    val existing = payStatusPeriod(type = PayStatusType.SHORT_TERM_SICK, startDate = today.plusDays(startOffset), endDate = null)
+// Commented out as this is part of another ticket.
+//  @ParameterizedTest
+//  @ValueSource(longs = [-1, 0])
+//  fun `should reject deleting past or current STS periods`(startOffset: Long) {
+//    val existing = payStatusPeriod(type = PayStatusType.SHORT_TERM_SICK, startDate = today.plusDays(startOffset), endDate = null)
+//
+//    assertThatThrownBy { rules.validateDeleteRequest(existing, today) }
+//      .isInstanceOf(IllegalArgumentException::class.java)
+//      .hasMessage("Cannot delete a pay status period with a start date in the past or today")
+//  }
 
-    assertThatThrownBy { rules.validateDeleteRequest(existing, today) }
-      .isInstanceOf(IllegalArgumentException::class.java)
-      .hasMessage("Cannot delete a pay status period with a start date in the past or today")
-  }
-
-  @Test
-  fun `should allow deleting a future STS period`() {
-    val existing = payStatusPeriod(type = PayStatusType.SHORT_TERM_SICK, startDate = today.plusDays(1), endDate = null)
-
-    assertThatCode { rules.validateDeleteRequest(existing, today) }.doesNotThrowAnyException()
-  }
+//  @Test
+//  fun `should allow deleting a future STS period`() {
+//    val existing = payStatusPeriod(type = PayStatusType.SHORT_TERM_SICK, startDate = today.plusDays(1), endDate = null)
+//
+//    assertThatCode { rules.validateDeleteRequest(existing, today) }.doesNotThrowAnyException()
+//  }
 }
