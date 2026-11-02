@@ -8,7 +8,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.createPayStatusPeriodRequest
-import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.payStatusPeriod
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import java.time.LocalDate
 
