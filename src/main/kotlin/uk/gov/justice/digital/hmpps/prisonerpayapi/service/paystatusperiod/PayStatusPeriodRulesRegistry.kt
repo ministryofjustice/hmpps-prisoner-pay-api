@@ -12,8 +12,7 @@ class PayStatusPeriodRulesRegistry(allRules: List<PayStatusPeriodRules>) {
     val duplicateTypes = rulesByType.filterValues { it.size > 1 }.keys
     check(duplicateTypes.isEmpty()) { "Multiple pay status period rules defined for pay types: $duplicateTypes" }
 
-//    val missingTypes = PayStatusType.entries.toSet() - rulesByType.keys
-    val missingTypes = setOf(PayStatusType.LONG_TERM_SICK) - rulesByType.keys
+    val missingTypes = PayStatusType.entries.toSet() - rulesByType.keys
     check(missingTypes.isEmpty()) { "No pay status period rules defined for pay types: $missingTypes" }
 
     rulesMap = rulesByType.mapValues { (_, rules) -> rules.single() }

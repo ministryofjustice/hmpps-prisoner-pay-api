@@ -7,6 +7,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -53,9 +56,10 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
       }
     }
 
-    @Test
-    fun `can create a new pay status period without an end date`() {
-      val request = createPayStatusPeriodRequest(endDate = null)
+    @ParameterizedTest
+    @EnumSource(PayStatusType::class)
+    fun `can create a new pay status period without an end date`(type: PayStatusType) {
+      val request = createPayStatusPeriodRequest(type = type, endDate = null)
 
       val response = createPayStatusPeriod(request).success<PayStatusPeriod>()
 
@@ -86,6 +90,69 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
         assertThat(createdDateTime).isCloseTo(now(), within(1, ChronoUnit.SECONDS))
       }
     }
+
+    @ParameterizedTest
+    @CsvSource("0, 0", "0, 27", "0, 28", "40, 28")
+    fun `can create and retrieve an STS period up to the duration limit`(startOffset: Long, duration: Long) {
+      val startDate = today().plusDays(startOffset)
+      val request = createPayStatusPeriodRequest(
+        type = PayStatusType.SHORT_TERM_SICK,
+        startDate = startDate,
+        endDate = startDate.plusDays(duration),
+      )
+
+      val response = createPayStatusPeriod(request).success<PayStatusPeriod>()
+
+      assertThat(response.type).isEqualTo(PayStatusType.SHORT_TERM_SICK)
+      assertThat(response.startDate).isEqualTo(request.startDate)
+      assertThat(response.endDate).isEqualTo(request.endDate)
+      assertThat(getPayStatusPeriod(response.id).success<PayStatusPeriod>()).isEqualTo(response)
+      assertThat(payStatusPeriodRepository.findById(response.id).orElseThrow().type).isEqualTo(PayStatusType.SHORT_TERM_SICK)
+    }
+
+    @ParameterizedTest
+    @CsvSource("0", "40")
+    fun `should return bad request without saving when STS exceeds 28 days`(startOffset: Long) {
+      val startDate = today().plusDays(startOffset)
+      val request = createPayStatusPeriodRequest(
+        type = PayStatusType.SHORT_TERM_SICK,
+        startDate = startDate,
+        endDate = startDate.plusDays(29),
+      )
+
+      with(createPayStatusPeriod(request).badRequest()) {
+        assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+        assertThat(userMessage).isEqualTo("Validation failure: The pay status period must not exceed 28 days")
+        assertThat(developerMessage).isEqualTo("The pay status period must not exceed 28 days")
+      }
+      assertThat(payStatusPeriodRepository.count()).isZero()
+    }
+
+    @Test
+    fun `LTS periods should remain unlimited`() {
+      val request = createPayStatusPeriodRequest(endDate = today().plusYears(10))
+
+      val response = createPayStatusPeriod(request).success<PayStatusPeriod>()
+
+      assertThat(response.type).isEqualTo(PayStatusType.LONG_TERM_SICK)
+      assertThat(response.endDate).isEqualTo(request.endDate)
+    }
+// Commented out as this is part of another ticket.
+//    @Test
+//    fun `can search and delete a future STS period`() {
+//      val request = createPayStatusPeriodRequest(
+//        type = PayStatusType.SHORT_TERM_SICK,
+//        startDate = today().plusDays(1),
+//        endDate = today().plusDays(28),
+//      )
+//      val response = createPayStatusPeriod(request).success<PayStatusPeriod>()
+//
+//      assertThat(searchPayStatusPeriods(request.startDate).successList<PayStatusPeriod>()).containsExactly(response)
+//
+//      deleteFuturePayStatusPeriod(response.id).expectStatus().isNoContent
+//
+//      assertThat(payStatusPeriodRepository.findById(response.id)).isEmpty()
+//    }
 
     @Test
     fun `should return bad request when the start date is after end date`() {
@@ -308,6 +375,36 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
   @Nested
   @DisplayName("Update a Pay Status Period")
   inner class UpdatePayStatusPeriod {
+
+    @Test
+    fun `should reject an over limit STS PATCH without changing the stored period`() {
+      val startDate = today()
+      val original = createPayStatusPeriod(
+        createPayStatusPeriodRequest(type = PayStatusType.SHORT_TERM_SICK, startDate = startDate, endDate = startDate.plusDays(10)),
+      ).success<PayStatusPeriod>()
+
+      with(updatePayStatusPeriod(original.id, updatePayStatusPeriodRequest(endDate = startDate.plusDays(100))).badRequest()) {
+        assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+        assertThat(userMessage).isEqualTo("Validation failure: The pay status period must not exceed 28 days")
+        assertThat(developerMessage).isEqualTo("The pay status period must not exceed 28 days")
+      }
+
+      assertThat(getPayStatusPeriod(original.id).success<PayStatusPeriod>()).isEqualTo(original)
+      assertThat(payStatusPeriodRepository.findById(original.id).orElseThrow().endDate).isEqualTo(original.endDate)
+    }
+
+    @Test
+    fun `should allow an STS PATCH to the 28 day boundary`() {
+      val startDate = today().plusDays(10)
+      val original = createPayStatusPeriod(
+        createPayStatusPeriodRequest(type = PayStatusType.SHORT_TERM_SICK, startDate = startDate, endDate = null),
+      ).success<PayStatusPeriod>()
+      val endDate = startDate.plusDays(28)
+
+      assertThat(updatePayStatusPeriod(original.id, updatePayStatusPeriodRequest(endDate = endDate)).success<PayStatusPeriod>().endDate)
+        .isEqualTo(endDate)
+      assertThat(payStatusPeriodRepository.findById(original.id).orElseThrow().endDate).isEqualTo(endDate)
+    }
 
     @Test
     fun `should update end date of the pay status period`() {

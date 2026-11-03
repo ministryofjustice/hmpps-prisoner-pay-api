@@ -3,6 +3,9 @@ package uk.gov.justice.digital.hmpps.prisonerpayapi.service
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -15,7 +18,11 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.UUID1
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.payStatusPeriod
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.today
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusPeriod
+import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPeriodRepository
+import uk.gov.justice.digital.hmpps.prisonerpayapi.service.paystatusperiod.PayStatusPeriodRulesRegistry
+import uk.gov.justice.digital.hmpps.prisonerpayapi.service.paystatusperiod.rules.LongTermSickPayStatusPeriodRules
+import uk.gov.justice.digital.hmpps.prisonerpayapi.service.paystatusperiod.rules.ShortTermSickPayStatusPeriodRules
 import java.time.Clock
 import java.time.ZoneId
 import java.util.*
@@ -24,9 +31,39 @@ class PayStatusPeriodUpdateServiceTest {
   val repository: PayStatusPeriodRepository = mock()
   val clock: Clock = Clock.system(ZoneId.of("Europe/London"))
 
-  val service = PayStatusPeriodUpdateService(repository, clock)
+  val rulesRegistry = PayStatusPeriodRulesRegistry(listOf(LongTermSickPayStatusPeriodRules(), ShortTermSickPayStatusPeriodRules()))
+  val service = PayStatusPeriodUpdateService(repository, clock, rulesRegistry)
 
   val captor = argumentCaptor<PayStatusPeriod>()
+
+  @ParameterizedTest
+  @ValueSource(longs = [29, 100])
+  fun `should reject an over limit STS update without modifying the entity`(duration: Long) {
+    val startDate = today().minusDays(1)
+    val originalEndDate = startDate.plusDays(10)
+    val entity = payStatusPeriod(type = PayStatusType.SHORT_TERM_SICK, startDate = startDate, endDate = originalEndDate)
+    whenever(repository.findById(UUID1)).thenReturn(Optional.of(entity))
+
+    assertThatThrownBy { service.update(UUID1, UpdatePayStatusPeriodRequest(endDate = startDate.plusDays(duration))) }
+      .isInstanceOf(IllegalArgumentException::class.java)
+      .hasMessage("The pay status period must not exceed 28 days")
+
+    assertThat(entity.endDate).isEqualTo(originalEndDate)
+    verify(repository, never()).saveAndFlush(any())
+  }
+
+  @ParameterizedTest
+  @ValueSource(longs = [0, 27, 28])
+  fun `should allow STS updates up to 28 days from the start date`(duration: Long) {
+    val startDate = today().plusDays(10)
+    val entity = payStatusPeriod(type = PayStatusType.SHORT_TERM_SICK, startDate = startDate, endDate = null)
+    whenever(repository.findById(UUID1)).thenReturn(Optional.of(entity))
+    whenever(repository.saveAndFlush(entity)).thenReturn(entity)
+    val newEndDate = startDate.plusDays(duration)
+
+    assertThat(service.update(UUID1, UpdatePayStatusPeriodRequest(endDate = newEndDate)).endDate).isEqualTo(newEndDate)
+    verify(repository).saveAndFlush(entity)
+  }
 
   @Test
   fun `should set end date`() {
@@ -47,9 +84,10 @@ class PayStatusPeriodUpdateServiceTest {
     assertThat(captor.firstValue.endDate).isEqualTo(newEndDate)
   }
 
-  @Test
-  fun `should remove the end date`() {
-    val savedEntity = payStatusPeriod()
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should remove the end date`(type: PayStatusType) {
+    val savedEntity = payStatusPeriod(type = type, endDate = today().plusDays(28))
 
     whenever(repository.findById(UUID1)).thenReturn(Optional.of(savedEntity))
 
@@ -62,6 +100,17 @@ class PayStatusPeriodUpdateServiceTest {
     verify(repository).saveAndFlush(captor.capture())
 
     assertThat(captor.firstValue.endDate).isNull()
+  }
+
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should preserve the end date when no change is requested`(type: PayStatusType) {
+    val originalEndDate = today().plusDays(28)
+    val entity = payStatusPeriod(type = type, endDate = originalEndDate)
+    whenever(repository.findById(UUID1)).thenReturn(Optional.of(entity))
+    whenever(repository.saveAndFlush(entity)).thenReturn(entity)
+
+    assertThat(service.update(UUID1, UpdatePayStatusPeriodRequest()).endDate).isEqualTo(originalEndDate)
   }
 
   @Test

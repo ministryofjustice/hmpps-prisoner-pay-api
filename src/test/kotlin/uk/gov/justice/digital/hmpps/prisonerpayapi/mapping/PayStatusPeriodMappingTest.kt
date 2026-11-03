@@ -1,7 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerpayapi.mapping
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.createPayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import java.time.Clock
@@ -16,13 +17,14 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusPeriod as
 class PayStatusPeriodMappingTest {
   val clock: Clock = Clock.fixed(Instant.parse("2025-07-23T12:34:56Z"), ZoneId.of("Europe/London"))
 
-  @Test
-  fun `should map from entity to dto`() {
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should map from entity to dto`(type: PayStatusType) {
     val entity = Entity(
       id = UUID.randomUUID(),
       prisonCode = "RSI",
       prisonerNumber = "A1234AA",
-      type = PayStatusType.LONG_TERM_SICK,
+      type = type,
       startDate = LocalDate.now(),
       endDate = LocalDate.now().plusDays(10),
       createdDateTime = LocalDateTime.now(),
@@ -45,9 +47,10 @@ class PayStatusPeriodMappingTest {
     assertThat(result).isEqualTo(expectedDto)
   }
 
-  @Test
-  fun `should map from dto to entity`() {
-    val dto = createPayStatusPeriodRequest()
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should map from dto to entity`(type: PayStatusType) {
+    val dto = createPayStatusPeriodRequest(type = type)
 
     val result = dto.toEntity("JBLOGGS", clock)
 

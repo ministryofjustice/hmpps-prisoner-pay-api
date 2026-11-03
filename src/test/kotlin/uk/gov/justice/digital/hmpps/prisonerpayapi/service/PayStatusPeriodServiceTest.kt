@@ -5,6 +5,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -49,12 +51,13 @@ class PayStatusPeriodServiceTest {
   @BeforeEach
   fun setUp() {
     whenever(authenticationHolder.username).thenReturn("BLOGGSJ")
-    whenever(rulesRegistry.rulesFor(PayStatusType.LONG_TERM_SICK)).thenReturn(rules)
+    PayStatusType.entries.forEach { whenever(rulesRegistry.rulesFor(it)).thenReturn(rules) }
   }
 
-  @Test
-  fun `should save pay status period with start date of today`() {
-    val request = createPayStatusPeriodRequest()
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should save pay status period with start date of today`(type: PayStatusType) {
+    val request = createPayStatusPeriodRequest(type = type, startDate = today, endDate = today.plusDays(28))
 
     val newEntity = payStatusPeriod(
       id = null,
@@ -95,9 +98,10 @@ class PayStatusPeriodServiceTest {
     assertThat(captor.firstValue).usingRecursiveComparison().isEqualTo(newEntity)
   }
 
-  @Test
-  fun `should not save when the selected strategy rejects create`() {
-    val request = createPayStatusPeriodRequest()
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should not save when the selected strategy rejects create`(type: PayStatusType) {
+    val request = createPayStatusPeriodRequest(type = type)
     doThrow(IllegalArgumentException("Create rejected by strategy"))
       .whenever(rules).validateCreateRequest(request, today)
 
@@ -176,9 +180,11 @@ class PayStatusPeriodServiceTest {
     assertThat(result).isEqualTo(entity.toModel())
   }
 
-  @Test
-  fun `should delete a future pay status period`() {
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should delete a future pay status period`(type: PayStatusType) {
     val futurePayStatusPeriod = payStatusPeriod(
+      type = type,
       startDate = LocalDate.now(clock).plusDays(10),
       endDate = LocalDate.now(clock).plusMonths(1),
     )
@@ -195,9 +201,10 @@ class PayStatusPeriodServiceTest {
     }
   }
 
-  @Test
-  fun `should not delete when the selected strategy rejects delete`() {
-    val existing = payStatusPeriod(startDate = LocalDate.now(clock))
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should not delete when the selected strategy rejects delete`(type: PayStatusType) {
+    val existing = payStatusPeriod(type = type, startDate = LocalDate.now(clock))
 
     whenever(repository.findById(UUID1)).thenReturn(Optional.of(existing))
     doThrow(IllegalArgumentException("Delete rejected by strategy"))
