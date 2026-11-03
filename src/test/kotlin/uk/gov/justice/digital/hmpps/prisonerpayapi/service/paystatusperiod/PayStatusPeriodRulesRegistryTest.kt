@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.CreatePayStatusPeriodRequest
+import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.UpdatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusPeriod
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import uk.gov.justice.digital.hmpps.prisonerpayapi.service.paystatusperiod.rules.LongTermSickPayStatusPeriodRules
@@ -46,6 +47,7 @@ class PayStatusPeriodRulesRegistryTest {
   private fun stubRulesFor(type: PayStatusType) = object : PayStatusPeriodRules {
     override fun payType() = type
     override fun validateCreateRequest(request: CreatePayStatusPeriodRequest, today: LocalDate) {}
+    override fun validateUpdateRequest(existing: PayStatusPeriod, request: UpdatePayStatusPeriodRequest) {}
     override fun validateDeleteRequest(existing: PayStatusPeriod, today: LocalDate) {}
   }
 }

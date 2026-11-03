@@ -377,6 +377,36 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
   inner class UpdatePayStatusPeriod {
 
     @Test
+    fun `should reject an over limit STS PATCH without changing the stored period`() {
+      val startDate = today()
+      val original = createPayStatusPeriod(
+        createPayStatusPeriodRequest(type = PayStatusType.SHORT_TERM_SICK, startDate = startDate, endDate = startDate.plusDays(10)),
+      ).success<PayStatusPeriod>()
+
+      with(updatePayStatusPeriod(original.id, updatePayStatusPeriodRequest(endDate = startDate.plusDays(100))).badRequest()) {
+        assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+        assertThat(userMessage).isEqualTo("Validation failure: The pay status period must not exceed 28 days")
+        assertThat(developerMessage).isEqualTo("The pay status period must not exceed 28 days")
+      }
+
+      assertThat(getPayStatusPeriod(original.id).success<PayStatusPeriod>()).isEqualTo(original)
+      assertThat(payStatusPeriodRepository.findById(original.id).orElseThrow().endDate).isEqualTo(original.endDate)
+    }
+
+    @Test
+    fun `should allow an STS PATCH to the 28 day boundary`() {
+      val startDate = today().plusDays(10)
+      val original = createPayStatusPeriod(
+        createPayStatusPeriodRequest(type = PayStatusType.SHORT_TERM_SICK, startDate = startDate, endDate = null),
+      ).success<PayStatusPeriod>()
+      val endDate = startDate.plusDays(28)
+
+      assertThat(updatePayStatusPeriod(original.id, updatePayStatusPeriodRequest(endDate = endDate)).success<PayStatusPeriod>().endDate)
+        .isEqualTo(endDate)
+      assertThat(payStatusPeriodRepository.findById(original.id).orElseThrow().endDate).isEqualTo(endDate)
+    }
+
+    @Test
     fun `should update end date of the pay status period`() {
       val twoMonths = today().plusMonths(2)
       val sixMonths = twoMonths.plusMonths(4)
