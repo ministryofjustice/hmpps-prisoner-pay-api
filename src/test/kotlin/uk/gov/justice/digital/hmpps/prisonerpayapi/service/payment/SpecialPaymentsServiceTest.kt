@@ -1,7 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerpayapi.service.payment
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import uk.gov.justice.digital.hmpps.prisonerpayapi.common.TimeSlot
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.payRate
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.payStatusPeriod
@@ -17,15 +18,16 @@ class SpecialPaymentsServiceTest {
 
   val specialPaymentsService = SpecialPaymentsService(clock)
 
-  @Test
-  fun `should calculate special payments for a prisoner`() {
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should calculate special payments for a prisoner`(type: PayStatusType) {
     val eventDate = LocalDate.of(2025, 1, 16)
 
-    val payStatusPeriod = payStatusPeriod(startDate = eventDate.minusDays(1), endDate = null)
+    val payStatusPeriod = payStatusPeriod(type = type, startDate = eventDate.minusDays(1), endDate = null)
 
     val payRate = payRate(startDate = eventDate.minusDays(1))
 
-    val result = specialPaymentsService.calcPayments(eventDate, listOf(payStatusPeriod), mapOf(PayStatusType.LONG_TERM_SICK to payRate))
+    val result = specialPaymentsService.calcPayments(eventDate, listOf(payStatusPeriod), mapOf(type to payRate))
 
     assertThat(result).hasSize(2)
 
@@ -44,55 +46,59 @@ class SpecialPaymentsServiceTest {
       assertThat(prisonerNumber).isEqualTo(payStatusPeriod.prisonerNumber)
       assertThat(eventDate).isEqualTo(eventDate)
       assertThat(timeSlot).isEqualTo(TimeSlot.PM)
-      assertThat(paymentType).isEqualTo(payStatusPeriod.type.paymentType)
+      assertThat(paymentType).isEqualTo(type.paymentType)
       assertThat(paymentDateTime).isEqualTo(LocalDateTime.now(clock))
       assertThat(paymentAmount).isEqualTo(99)
     }
   }
 
-  @Test
-  fun `should return no payments if there are no special payments for the prisoner`() {
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should return no payments if there are no special payments for the prisoner`(type: PayStatusType) {
     val eventDate = LocalDate.of(2025, 1, 16)
 
     val payRate = payRate(startDate = eventDate.minusDays(1))
 
-    val result = specialPaymentsService.calcPayments(eventDate, emptyList(), mapOf(PayStatusType.LONG_TERM_SICK to payRate))
+    val result = specialPaymentsService.calcPayments(eventDate, emptyList(), mapOf(type to payRate))
 
     assertThat(result).isEmpty()
   }
 
-  @Test
-  fun `should use first pay status period if multiple exist`() {
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should use first pay status period if multiple exist`(type: PayStatusType) {
     val eventDate = LocalDate.of(2025, 1, 16)
 
-    val payStatusPeriod1 = payStatusPeriod(startDate = eventDate.plusDays(1), endDate = null)
-    val payStatusPeriod2 = payStatusPeriod(startDate = eventDate.minusDays(1), endDate = null)
+    val payStatusPeriod1 = payStatusPeriod(type = type, startDate = eventDate.plusDays(1), endDate = null)
+    val payStatusPeriod2 = payStatusPeriod(type = type, startDate = eventDate.minusDays(1), endDate = null)
 
     val payRate = payRate(startDate = eventDate.minusDays(1))
 
-    val result = specialPaymentsService.calcPayments(eventDate, listOf(payStatusPeriod1, payStatusPeriod2), mapOf(PayStatusType.LONG_TERM_SICK to payRate))
+    val result = specialPaymentsService.calcPayments(eventDate, listOf(payStatusPeriod1, payStatusPeriod2), mapOf(type to payRate))
 
     assertThat(result).isEmpty()
   }
 
-  @Test
-  fun `should be no payments if the special payment is not active on the date`() {
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should be no payments if the special payment is not active on the date`(type: PayStatusType) {
     val eventDate = LocalDate.of(2025, 1, 18) // Weekend
 
-    val payStatusPeriod = payStatusPeriod(startDate = eventDate.plusDays(1), endDate = null)
+    val payStatusPeriod = payStatusPeriod(type = type, startDate = eventDate.plusDays(1), endDate = null)
 
     val payRate = payRate(startDate = eventDate.minusDays(1))
 
-    val result = specialPaymentsService.calcPayments(eventDate, listOf(payStatusPeriod), mapOf(PayStatusType.LONG_TERM_SICK to payRate))
+    val result = specialPaymentsService.calcPayments(eventDate, listOf(payStatusPeriod), mapOf(type to payRate))
 
     assertThat(result).isEmpty()
   }
 
-  @Test
-  fun `should be no payments if no pay rate exists`() {
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should be no payments if no pay rate exists`(type: PayStatusType) {
     val eventDate = LocalDate.of(2025, 1, 16)
 
-    val payStatusPeriod = payStatusPeriod(startDate = eventDate.minusDays(1), endDate = null)
+    val payStatusPeriod = payStatusPeriod(type = type, startDate = eventDate.minusDays(1), endDate = null)
 
     val result = specialPaymentsService.calcPayments(eventDate, listOf(payStatusPeriod), emptyMap())
 
