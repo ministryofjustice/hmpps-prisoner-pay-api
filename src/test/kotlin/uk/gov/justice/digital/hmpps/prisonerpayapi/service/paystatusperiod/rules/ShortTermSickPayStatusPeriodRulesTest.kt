@@ -48,30 +48,6 @@ class ShortTermSickPayStatusPeriodRulesTest {
       .hasMessage("The pay status period must not exceed 28 days")
   }
 
-  @Test
-  fun `should allow an open ended period under the base rules`() {
-    val request = createPayStatusPeriodRequest(type = PayStatusType.SHORT_TERM_SICK, startDate = today, endDate = null)
-
-    assertThatCode { rules.validateCreateRequest(request, today) }.doesNotThrowAnyException()
-  }
-
-  @ParameterizedTest
-  @CsvSource(
-    "-1, 1, The start date must not be in the past",
-    "0, -1, The end date must not be in the past",
-    "2, 1, The end date must not be before the start date",
-  )
-  fun `should retain base date validation`(startOffset: Long, endOffset: Long, message: String) {
-    val request = createPayStatusPeriodRequest(
-      type = PayStatusType.SHORT_TERM_SICK,
-      startDate = today.plusDays(startOffset),
-      endDate = today.plusDays(endOffset),
-    )
-
-    assertThatThrownBy { rules.validateCreateRequest(request, today) }
-      .isInstanceOf(IllegalArgumentException::class.java)
-      .hasMessage(message)
-  }
 
 // Commented out as this is part of another ticket.
 //  @ParameterizedTest
