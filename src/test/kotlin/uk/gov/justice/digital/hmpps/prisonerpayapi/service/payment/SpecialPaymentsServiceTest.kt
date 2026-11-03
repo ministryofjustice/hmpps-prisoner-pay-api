@@ -34,7 +34,7 @@ class SpecialPaymentsServiceTest {
     with(result[0]) {
       assertThat(prisonCode).isEqualTo(payStatusPeriod.prisonCode)
       assertThat(prisonerNumber).isEqualTo(payStatusPeriod.prisonerNumber)
-      assertThat(eventDate).isEqualTo(eventDate)
+      assertThat(this.eventDate).isEqualTo(eventDate)
       assertThat(timeSlot).isEqualTo(TimeSlot.AM)
       assertThat(paymentType).isEqualTo(payStatusPeriod.type.paymentType)
       assertThat(paymentDateTime).isEqualTo(LocalDateTime.now(clock))
@@ -44,7 +44,7 @@ class SpecialPaymentsServiceTest {
     with(result[1]) {
       assertThat(prisonCode).isEqualTo(payStatusPeriod.prisonCode)
       assertThat(prisonerNumber).isEqualTo(payStatusPeriod.prisonerNumber)
-      assertThat(eventDate).isEqualTo(eventDate)
+      assertThat(this.eventDate).isEqualTo(eventDate)
       assertThat(timeSlot).isEqualTo(TimeSlot.PM)
       assertThat(paymentType).isEqualTo(type.paymentType)
       assertThat(paymentDateTime).isEqualTo(LocalDateTime.now(clock))
