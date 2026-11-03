@@ -12,11 +12,14 @@ class PayRateRulesRegistry(allRules: List<PayRateRules>) {
     val duplicateTypes = rulesByType.filterValues { it.size > 1 }.keys
     check(duplicateTypes.isEmpty()) { "Multiple pay rate rules defined for pay types: $duplicateTypes" }
 
-    val missingTypes = PayStatusType.entries.toSet() - rulesByType.keys
+    // STS pay status is supported independently of STS pay rate management.
+    val missingTypes = setOf(PayStatusType.LONG_TERM_SICK) - rulesByType.keys
     check(missingTypes.isEmpty()) { "No pay rate rules defined for pay types: $missingTypes" }
 
     rulesMap = rulesByType.mapValues { (_, rules) -> rules.single() }
   }
 
-  fun rulesFor(type: PayStatusType): PayRateRules = rulesMap.getValue(type)
+  fun rulesFor(type: PayStatusType): PayRateRules = requireNotNull(rulesMap[type]) {
+    "No pay rate rules defined for pay type: $type"
+  }
 }

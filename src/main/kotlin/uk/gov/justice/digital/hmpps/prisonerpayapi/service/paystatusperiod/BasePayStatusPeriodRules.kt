@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerpayapi.service.paystatusperiod
 
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.CreatePayStatusPeriodRequest
+import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.UpdatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusPeriod
 import java.time.LocalDate
 
@@ -17,7 +18,15 @@ abstract class BasePayStatusPeriodRules(
     require(request.endDate == null || !request.endDate.isBefore(request.startDate)) {
       "The end date must not be before the start date"
     }
-    require(maxDurationDays == null || request.endDate == null || !request.endDate.isAfter(request.startDate.plusDays(maxDurationDays))) {
+    validateDuration(request.startDate, request.endDate)
+  }
+
+  override fun validateUpdateRequest(existing: PayStatusPeriod, request: UpdatePayStatusPeriodRequest) {
+    validateDuration(existing.startDate, request.endDate)
+  }
+
+  private fun validateDuration(startDate: LocalDate, endDate: LocalDate?) {
+    require(maxDurationDays == null || endDate == null || !endDate.isAfter(startDate.plusDays(maxDurationDays))) {
       "The pay status period must not exceed $maxDurationDays days"
     }
   }

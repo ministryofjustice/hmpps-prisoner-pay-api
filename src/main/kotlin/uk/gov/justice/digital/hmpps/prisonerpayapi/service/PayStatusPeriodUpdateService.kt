@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.UpdatePayStatusPe
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.response.PayStatusPeriod
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPeriodRepository
 import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toModel
+import uk.gov.justice.digital.hmpps.prisonerpayapi.service.paystatusperiod.PayStatusPeriodRulesRegistry
 import java.time.Clock
 import java.time.LocalDate
 import java.util.*
@@ -16,6 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusPeriod as
 class PayStatusPeriodUpdateService(
   private val repository: PayStatusPeriodRepository,
   private val clock: Clock,
+  private val rulesRegistry: PayStatusPeriodRulesRegistry,
 ) {
   @Transactional
   fun update(id: UUID, request: UpdatePayStatusPeriodRequest): PayStatusPeriod {
@@ -33,6 +35,7 @@ class PayStatusPeriodUpdateService(
         require(request.endDate == null || !request.endDate.isBefore(entity.startDate)) {
           "The end date must not be before the start date"
         }
+        rulesRegistry.rulesFor(entity.type).validateUpdateRequest(entity, request)
         applyEndDateUpdate(entity, request)
       }
       .let { repository.saveAndFlush(it) }

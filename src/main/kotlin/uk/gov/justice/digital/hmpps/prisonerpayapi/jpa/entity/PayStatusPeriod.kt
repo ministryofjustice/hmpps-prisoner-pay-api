@@ -45,7 +45,7 @@ class PayStatusPeriod(
   }
 
   fun applicableSessions() = when (type) {
-    PayStatusType.LONG_TERM_SICK -> listOf(TimeSlot.AM, TimeSlot.PM)
+    PayStatusType.LONG_TERM_SICK, PayStatusType.SHORT_TERM_SICK -> listOf(TimeSlot.AM, TimeSlot.PM)
   }
 
   fun isActiveOn(date: LocalDate): Boolean {
@@ -53,7 +53,7 @@ class PayStatusPeriod(
 
     return isInDateRange &&
       when (type) {
-        PayStatusType.LONG_TERM_SICK -> date.isWeekDay
+        PayStatusType.LONG_TERM_SICK, PayStatusType.SHORT_TERM_SICK -> date.isWeekDay
       }
   }
 }
