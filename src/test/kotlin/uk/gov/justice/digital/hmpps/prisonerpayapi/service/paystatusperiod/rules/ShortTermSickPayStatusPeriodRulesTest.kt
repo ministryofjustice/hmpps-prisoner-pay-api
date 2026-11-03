@@ -48,7 +48,6 @@ class ShortTermSickPayStatusPeriodRulesTest {
       .hasMessage("The pay status period must not exceed 28 days")
   }
 
-
 // Commented out as this is part of another ticket.
 //  @ParameterizedTest
 //  @ValueSource(longs = [-1, 0])
