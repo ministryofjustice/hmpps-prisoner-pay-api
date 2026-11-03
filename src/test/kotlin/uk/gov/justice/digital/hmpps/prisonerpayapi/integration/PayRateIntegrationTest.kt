@@ -188,8 +188,8 @@ class PayRateIntegrationTest : IntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("Update pay rates")
-  inner class UpdatePayRate {
+  @DisplayName("Update long term sick pay rates")
+  inner class UpdateLongTermSickPayRate {
 
     @Test
     @Sql("classpath:sql/pay-rates/update-pay-rates.sql")
@@ -429,6 +429,78 @@ class PayRateIntegrationTest : IntegrationTestBase() {
     fun `should return not found when pay rate id does not exist`() {
       updatePayRate(UUID.randomUUID(), updatePayRateRequest())
         .fail(HttpStatus.NOT_FOUND)
+    }
+  }
+
+  @Nested
+  @DisplayName("Update short term sick pay rates")
+  inner class UpdateShortTermSickPayRate {
+    private val futureRateId = UUID.fromString("22222222-2222-2222-2222-222222222222")
+
+    @Test
+    @Sql("classpath:sql/pay-rates/update-pay-rates-short-term-sick.sql")
+    fun `should update pay rate in place when request start date is today`() {
+      val beforeCount = payRateRepository.count()
+
+      val request = updatePayRateRequest(startDate = today, rate = 100)
+      updatePayRate(UUID1, request)
+        .success<PayRateDto>()
+        .also {
+          assertThat(it.id).isEqualTo(UUID1)
+          assertThat(it.type).isEqualTo(PayStatusType.SHORT_TERM_SICK)
+          assertThat(it.rate).isEqualTo(request.rate)
+          assertThat(it.updatedBy).isEqualTo(USERNAME)
+        }
+      assertThat(payRateRepository.count()).isEqualTo(beforeCount)
+    }
+
+    @Test
+    @Sql("classpath:sql/pay-rates/update-pay-rates-short-term-sick.sql")
+    fun `should create new future pay rate when request start date is in future and no future rate exists`() {
+      val beforeCount = payRateRepository.count()
+
+      val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 120)
+      updatePayRate(UUID1, request)
+        .success<PayRateDto>()
+        .also {
+          assertThat(it.id).isNotEqualTo(UUID1)
+          assertThat(it.type).isEqualTo(PayStatusType.SHORT_TERM_SICK)
+          assertThat(it.prisonCode).isEqualTo(RISLEY_PRISON_CODE)
+          assertThat(it.startDate).isEqualTo(request.startDate)
+          assertThat(it.rate).isEqualTo(request.rate)
+          assertThat(it.createdBy).isEqualTo(USERNAME)
+        }
+      assertThat(payRateRepository.count()).isEqualTo(beforeCount + 1)
+    }
+
+    @Test
+    @Sql("classpath:sql/pay-rates/update-pay-rates-future-rates-short-term-sick.sql")
+    fun `should return bad request when a future pay rate already exists`() {
+      val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 100)
+
+      with(updatePayRate(UUID1, request).badRequest()) {
+        assertThat(userMessage).isEqualTo("Validation failure: A future pay rate already exists")
+      }
+    }
+
+    @Test
+    @Sql("classpath:sql/pay-rates/update-pay-rates-future-rates-short-term-sick.sql")
+    fun `should return bad request when updating a future pay rate`() {
+      val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 120)
+
+      with(updatePayRate(futureRateId, request).badRequest()) {
+        assertThat(userMessage).isEqualTo("Validation failure: Future pay rate must be cancelled before updating")
+      }
+    }
+
+    @Test
+    @Sql("classpath:sql/pay-rates/update-pay-rates-short-term-sick.sql")
+    fun `should return bad request when request start date is in the past`() {
+      val request = updatePayRateRequest(startDate = today.minusDays(10), rate = 120)
+
+      with(updatePayRate(UUID1, request).badRequest()) {
+        assertThat(userMessage).isEqualTo("Validation failure: Pay rate start date must not be in the past")
+      }
     }
   }
 

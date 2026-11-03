@@ -2,25 +2,28 @@ package uk.gov.justice.digital.hmpps.prisonerpayapi.service.payrate
 
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.UpdatePayRateRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayRate
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import uk.gov.justice.digital.hmpps.prisonerpayapi.service.payrate.rules.LongTermSickPayRateRules
+import uk.gov.justice.digital.hmpps.prisonerpayapi.service.payrate.rules.ShortTermSickPayRateRules
 import java.time.LocalDate
 
 class PayRateRulesRegistryTest {
-  @Test
-  fun `should return the registered LTS strategy`() {
-    val ltsRules = LongTermSickPayRateRules()
-    val registry = PayRateRulesRegistry(listOf(ltsRules))
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should return the registered rules for each pay type`(type: PayStatusType) {
+    val allRules = listOf(LongTermSickPayRateRules(), ShortTermSickPayRateRules())
+    val registry = PayRateRulesRegistry(allRules)
 
-    assertThat(registry.rulesFor(PayStatusType.LONG_TERM_SICK)).isSameAs(ltsRules)
+    assertThat(registry.rulesFor(type)).isSameAs(allRules.single { it.payType() == type })
   }
 
-  @Test
-  fun `should reject missing strategies at construction`() {
-    val missingType = PayStatusType.LONG_TERM_SICK
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should reject missing strategies at construction`(missingType: PayStatusType) {
     val rulesForAllOtherTypes = PayStatusType.entries
       .filter { it != missingType }
       .map { stubRulesFor(it) }
@@ -30,13 +33,15 @@ class PayRateRulesRegistryTest {
       .hasMessage("No pay rate rules defined for pay types: [$missingType]")
   }
 
-  @Test
-  fun `should reject duplicate strategies instead of overwriting one`() {
-    assertThatThrownBy {
-      PayRateRulesRegistry(listOf(LongTermSickPayRateRules(), LongTermSickPayRateRules()))
-    }
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should reject duplicate strategies instead of overwriting one`(duplicateType: PayStatusType) {
+    val duplicates = listOf(stubRulesFor(duplicateType), stubRulesFor(duplicateType))
+    val others = PayStatusType.entries.filter { it != duplicateType }.map { stubRulesFor(it) }
+
+    assertThatThrownBy { PayRateRulesRegistry(duplicates + others) }
       .isInstanceOf(IllegalStateException::class.java)
-      .hasMessage("Multiple pay rate rules defined for pay types: [LONG_TERM_SICK]")
+      .hasMessage("Multiple pay rate rules defined for pay types: [$duplicateType]")
   }
 
   private fun stubRulesFor(type: PayStatusType) = object : PayRateRules {

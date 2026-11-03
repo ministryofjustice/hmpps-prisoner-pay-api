@@ -7,4 +7,9 @@ enum class PaymentType {
     description = "Long Term Sick",
   )
   LONG_TERM_SICK,
+
+  @Schema(
+    description = "Short Term Sick",
+  )
+  SHORT_TERM_SICK,
 }
