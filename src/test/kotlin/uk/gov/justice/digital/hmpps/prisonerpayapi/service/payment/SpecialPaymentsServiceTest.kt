@@ -25,7 +25,7 @@ class SpecialPaymentsServiceTest {
 
     val payStatusPeriod = payStatusPeriod(type = type, startDate = eventDate.minusDays(1), endDate = null)
 
-    val payRate = payRate(startDate = eventDate.minusDays(1))
+    val payRate = payRate(type = type, startDate = eventDate.minusDays(1))
 
     val result = specialPaymentsService.calcPayments(eventDate, listOf(payStatusPeriod), mapOf(type to payRate))
 
