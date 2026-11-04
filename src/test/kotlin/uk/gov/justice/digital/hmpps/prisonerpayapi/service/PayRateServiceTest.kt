@@ -5,6 +5,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doThrow
@@ -41,7 +43,7 @@ class PayRateServiceTest {
 
   @BeforeEach
   fun setupRules() {
-    whenever(rulesRegistry.rulesFor(PayStatusType.LONG_TERM_SICK)).thenReturn(rules)
+    PayStatusType.entries.forEach { whenever(rulesRegistry.rulesFor(it)).thenReturn(rules) }
   }
 
   @Test
@@ -92,10 +94,11 @@ class PayRateServiceTest {
     assertThat(result).isEmpty()
   }
 
-  @Test
-  fun `should call PayRateUpdateService to update pay rate`() {
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should call PayRateUpdateService to update pay rate`(type: PayStatusType) {
     val request = updatePayRateRequest(startDate = now, rate = 100)
-    val newPayRate = payRate(startDate = request.startDate, rate = request.rate)
+    val newPayRate = payRate(type = type, startDate = request.startDate, rate = request.rate)
 
     whenever(payRateUpdateService.update(UUID1, request)).thenReturn(newPayRate.toModel())
 

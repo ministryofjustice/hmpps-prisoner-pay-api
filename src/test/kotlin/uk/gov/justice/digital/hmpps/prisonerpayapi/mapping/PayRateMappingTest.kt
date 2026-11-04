@@ -61,8 +61,8 @@ class PayRateMappingTest {
 
     with(result) {
       assertThat(id).isNull()
-      assertThat(prisonCode).isEqualTo(prisonCode)
-      assertThat(type).isEqualTo(type)
+      assertThat(this.prisonCode).isEqualTo(prisonCode)
+      assertThat(this.type).isEqualTo(type)
       assertThat(startDate).isEqualTo(dto.startDate)
       assertThat(rate).isEqualTo(dto.rate)
       assertThat(createdBy).isEqualTo("TEST_USER")

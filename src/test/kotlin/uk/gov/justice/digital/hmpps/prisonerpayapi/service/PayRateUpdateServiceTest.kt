@@ -7,6 +7,7 @@ import org.assertj.core.api.Assertions.within
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
@@ -42,16 +43,17 @@ class PayRateUpdateServiceTest {
   val rules: PayRateRules = mock()
   val rulesRegistry: PayRateRulesRegistry = mock()
   val payRateUpdateService = PayRateUpdateService(authenticationHolder, repository, clock, rulesRegistry)
-  val today = LocalDate.now(clock)
+  val today: LocalDate = LocalDate.now(clock)
 
   @BeforeEach
   fun setupRules() {
-    whenever(rulesRegistry.rulesFor(PayStatusType.LONG_TERM_SICK)).thenReturn(rules)
+    PayStatusType.entries.forEach { whenever(rulesRegistry.rulesFor(it)).thenReturn(rules) }
   }
 
-  @Test
-  fun `should not save when the selected strategy rejects an update`() {
-    val existing = payRate(startDate = today)
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should not save when the selected strategy rejects an update`(type: PayStatusType) {
+    val existing = payRate(type = type, startDate = today)
     val request = updatePayRateRequest(startDate = today)
     whenever(repository.findById(UUID1)).thenReturn(Optional.of(existing))
     doThrow(IllegalArgumentException("Update rejected by strategy"))
@@ -65,9 +67,10 @@ class PayRateUpdateServiceTest {
     verify(repository, never()).save(any<PayRate>())
   }
 
-  @Test
-  fun `should update existing pay rate if the existing and request start date is today`() {
-    val existing = payRate(startDate = today, rate = 80)
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should update existing pay rate if the existing and request start date is today`(type: PayStatusType) {
+    val existing = payRate(type = type, startDate = today, rate = 80)
     val request = updatePayRateRequest(startDate = today, rate = 100)
 
     whenever(repository.findById(UUID1)).thenReturn(Optional.of(existing))
@@ -97,11 +100,12 @@ class PayRateUpdateServiceTest {
     }
   }
 
-  @Test
-  fun `should create new pay rate if existing start date is today and request start date is in future and no future rate exists`() {
-    val existing = payRate(startDate = today, rate = 80)
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should create new pay rate if existing start date is today and request start date is in future and no future rate exists`(type: PayStatusType) {
+    val existing = payRate(type = type, startDate = today, rate = 80)
     val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 100)
-    val savedPayRate = payRate(id = UUID.randomUUID(), startDate = request.startDate, rate = request.rate)
+    val savedPayRate = payRate(id = UUID.randomUUID(), type = type, startDate = request.startDate, rate = request.rate)
 
     whenever(repository.findById(UUID1)).thenReturn(Optional.of(existing))
     whenever(repository.existsByPrisonCodeAndTypeAndStartDateAfter(any(), any(), any()))
@@ -120,6 +124,7 @@ class PayRateUpdateServiceTest {
 
     with(captor.firstValue) {
       assertThat(id).isNotEqualTo(UUID1)
+      assertThat(this.type).isEqualTo(type)
       assertThat(rate).isEqualTo(request.rate)
       assertThat(startDate).isEqualTo(request.startDate)
     }
@@ -137,9 +142,10 @@ class PayRateUpdateServiceTest {
     }
   }
 
-  @Test
-  fun `should throw exception if existing start date is today and request start date is in future and future rate exists`() {
-    val existing = payRate(startDate = today, rate = 80)
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should throw exception if existing start date is today and request start date is in future and future rate exists`(type: PayStatusType) {
+    val existing = payRate(type = type, startDate = today, rate = 80)
     val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 100)
 
     whenever(repository.findById(UUID1)).thenReturn(Optional.of(existing))
@@ -195,9 +201,10 @@ class PayRateUpdateServiceTest {
     }
   }
 
-  @Test
-  fun `should throw exception if existing start date is in past and request start date is in future and future rate exists`() {
-    val existing = payRate(startDate = today.minusDays(10), rate = 80)
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should throw exception if existing start date is in past and request start date is in future and future rate exists`(type: PayStatusType) {
+    val existing = payRate(type = type, startDate = today.minusDays(10), rate = 80)
     val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 100)
 
     whenever(repository.findById(UUID1)).thenReturn(Optional.of(existing))
@@ -220,9 +227,10 @@ class PayRateUpdateServiceTest {
       .hasMessage("Pay rate with id '$UUID1' not found")
   }
 
-  @Test
-  fun `should throw exception if pay rate already exists for given prison code, type and start date`() {
-    val existing = payRate(startDate = today, rate = 80)
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should throw exception if pay rate already exists for given prison code, type and start date`(type: PayStatusType) {
+    val existing = payRate(type = type, startDate = today, rate = 80)
     val request = updatePayRateRequest(startDate = today.plusDays(10), rate = 100)
 
     whenever(repository.findById(UUID1)).thenReturn(Optional.of(existing))
