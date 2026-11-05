@@ -47,7 +47,7 @@ class PayStatusPeriodRulesRegistryTest {
   private fun stubRulesFor(type: PayStatusType) = object : PayStatusPeriodRules {
     override fun payType() = type
     override fun validateCreateRequest(request: CreatePayStatusPeriodRequest, today: LocalDate) {}
-    override fun validateUpdateRequest(existing: PayStatusPeriod, request: UpdatePayStatusPeriodRequest) {}
+    override fun validateUpdateRequest(existing: PayStatusPeriod, request: UpdatePayStatusPeriodRequest, today: LocalDate) {}
     override fun validateDeleteRequest(existing: PayStatusPeriod, today: LocalDate) {}
   }
 }
