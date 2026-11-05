@@ -5,6 +5,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.UpdatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.createPayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.payStatusPeriod
 import uk.gov.justice.digital.hmpps.prisonerpayapi.service.paystatusperiod.rules.LongTermSickPayStatusPeriodRules
@@ -85,6 +86,61 @@ class BasePayStatusPeriodRulesTest {
     val request = createPayStatusPeriodRequest(type = rules.payType(), startDate = today, endDate = today)
 
     assertThatCode { rules.validateCreateRequest(request, today) }.doesNotThrowAnyException()
+  }
+
+  @ParameterizedTest
+  @MethodSource("rules")
+  fun `should reject conflicting fields when updating`(rules: PayStatusPeriodRules) {
+    val existing = payStatusPeriod(type = rules.payType(), startDate = today, endDate = null)
+    val request = UpdatePayStatusPeriodRequest(endDate = today, removeEndDate = true)
+
+    assertThatThrownBy { rules.validateUpdateRequest(existing, request, today) }
+      .isInstanceOf(IllegalArgumentException::class.java)
+      .hasMessage("removeEndDate cannot be true when an endDate is also supplied")
+  }
+
+  @ParameterizedTest
+  @MethodSource("rules")
+  fun `should reject a past end date when updating`(rules: PayStatusPeriodRules) {
+    val existing = payStatusPeriod(type = rules.payType(), startDate = today.minusDays(10), endDate = null)
+    val request = UpdatePayStatusPeriodRequest(endDate = today.minusDays(1))
+
+    assertThatThrownBy { rules.validateUpdateRequest(existing, request, today) }
+      .isInstanceOf(IllegalArgumentException::class.java)
+      .hasMessage("The end date must not be in the past")
+  }
+
+  @ParameterizedTest
+  @MethodSource("rules")
+  fun `should reject an end date before the start date when updating`(rules: PayStatusPeriodRules) {
+    val existing = payStatusPeriod(type = rules.payType(), startDate = today.plusDays(10), endDate = null)
+    val request = UpdatePayStatusPeriodRequest(endDate = today.plusDays(5))
+
+    assertThatThrownBy { rules.validateUpdateRequest(existing, request, today) }
+      .isInstanceOf(IllegalArgumentException::class.java)
+      .hasMessage("The end date must not be before the start date")
+  }
+
+  @ParameterizedTest
+  @MethodSource("rules")
+  fun `should reject extending or reopening expired periods`(rules: PayStatusPeriodRules) {
+    val existing = payStatusPeriod(type = rules.payType(), startDate = today.minusDays(10), endDate = today.minusDays(1))
+    val requests = listOf(UpdatePayStatusPeriodRequest(endDate = today), UpdatePayStatusPeriodRequest(removeEndDate = true))
+
+    requests.forEach { request ->
+      assertThatThrownBy { rules.validateUpdateRequest(existing, request, today) }
+        .isInstanceOf(IllegalArgumentException::class.java)
+        .hasMessage("Cannot update an expired pay status period")
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("rules")
+  fun `should allow updating a period ending today`(rules: PayStatusPeriodRules) {
+    val existing = payStatusPeriod(type = rules.payType(), startDate = today.minusDays(10), endDate = today)
+
+    assertThatCode { rules.validateUpdateRequest(existing, UpdatePayStatusPeriodRequest(endDate = today.plusDays(1)), today) }
+      .doesNotThrowAnyException()
   }
 
   @ParameterizedTest

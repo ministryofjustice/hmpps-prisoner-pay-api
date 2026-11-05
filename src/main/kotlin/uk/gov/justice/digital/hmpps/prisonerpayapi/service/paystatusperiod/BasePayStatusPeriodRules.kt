@@ -8,6 +8,17 @@ import java.time.LocalDate
 abstract class BasePayStatusPeriodRules(
   private val maxDurationDays: Long? = null,
 ) : PayStatusPeriodRules {
+  companion object {
+    fun validateUpdateRequestFields(request: UpdatePayStatusPeriodRequest, today: LocalDate) {
+      require(request.endDate == null || !request.removeEndDate) {
+        "removeEndDate cannot be true when an endDate is also supplied"
+      }
+      require(request.endDate == null || !request.endDate.isBefore(today)) {
+        "The end date must not be in the past"
+      }
+    }
+  }
+
   override fun validateCreateRequest(request: CreatePayStatusPeriodRequest, today: LocalDate) {
     require(!request.startDate.isBefore(today)) {
       "The start date must not be in the past"
@@ -21,7 +32,14 @@ abstract class BasePayStatusPeriodRules(
     validateDuration(request.startDate, request.endDate)
   }
 
-  override fun validateUpdateRequest(existing: PayStatusPeriod, request: UpdatePayStatusPeriodRequest) {
+  override fun validateUpdateRequest(existing: PayStatusPeriod, request: UpdatePayStatusPeriodRequest, today: LocalDate) {
+    validateUpdateRequestFields(request, today)
+    require(existing.endDate?.isBefore(today) != true) {
+      "Cannot update an expired pay status period"
+    }
+    require(request.endDate == null || !request.endDate.isBefore(existing.startDate)) {
+      "The end date must not be before the start date"
+    }
     validateDuration(existing.startDate, request.endDate)
   }
 

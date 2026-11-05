@@ -376,6 +376,69 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
   @DisplayName("Update a Pay Status Period")
   inner class UpdatePayStatusPeriod {
 
+    @ParameterizedTest
+    @CsvSource(
+      "LONG_TERM_SICK, false",
+      "LONG_TERM_SICK, true",
+      "SHORT_TERM_SICK, false",
+      "SHORT_TERM_SICK, true",
+    )
+    fun `should reject updating expired periods without changing the stored period`(type: PayStatusType, removeEndDate: Boolean) {
+      val original = seedPayStatusPeriod(
+        createPayStatusPeriodRequest(type = type, startDate = today().minusDays(10), endDate = today().minusDays(1)),
+      )
+      val id = requireNotNull(original.id)
+      val request = updatePayStatusPeriodRequest(
+        endDate = if (removeEndDate) null else today().plusDays(1),
+        removeEndDate = removeEndDate,
+      )
+
+      with(updatePayStatusPeriod(id, request).badRequest()) {
+        assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+        assertThat(userMessage).isEqualTo("Validation failure: Cannot update an expired pay status period")
+        assertThat(developerMessage).isEqualTo("Cannot update an expired pay status period")
+      }
+
+      assertThat(getPayStatusPeriod(id).success<PayStatusPeriod>().endDate).isEqualTo(original.endDate)
+      assertThat(payStatusPeriodRepository.findById(id).orElseThrow().endDate).isEqualTo(original.endDate)
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+      "LONG_TERM_SICK, -10, 0",
+      "LONG_TERM_SICK, -10, 5",
+      "LONG_TERM_SICK, 0, 5",
+      "LONG_TERM_SICK, 5, 10",
+      "LONG_TERM_SICK, -10,",
+      "LONG_TERM_SICK, 5,",
+      "SHORT_TERM_SICK, -10, 0",
+      "SHORT_TERM_SICK, -10, 5",
+      "SHORT_TERM_SICK, 0, 5",
+      "SHORT_TERM_SICK, 5, 10",
+      "SHORT_TERM_SICK, -10,",
+      "SHORT_TERM_SICK, 5,",
+    )
+    fun `should allow end date updates for active and future periods`(type: PayStatusType, startOffset: Long, endOffset: Long?) {
+      val original = seedPayStatusPeriod(
+        createPayStatusPeriodRequest(
+          type = type,
+          startDate = today().plusDays(startOffset),
+          endDate = endOffset?.let { today().plusDays(it) },
+        ),
+      )
+      val id = requireNotNull(original.id)
+      val newEndDate = today().plusDays(15)
+
+      assertThat(updatePayStatusPeriod(id, updatePayStatusPeriodRequest(endDate = newEndDate)).success<PayStatusPeriod>().endDate)
+        .isEqualTo(newEndDate)
+      assertThat(payStatusPeriodRepository.findById(id).orElseThrow().endDate).isEqualTo(newEndDate)
+
+      assertThat(
+        updatePayStatusPeriod(id, updatePayStatusPeriodRequest(endDate = null, removeEndDate = true)).success<PayStatusPeriod>().endDate,
+      ).isNull()
+      assertThat(payStatusPeriodRepository.findById(id).orElseThrow().endDate).isNull()
+    }
+
     @Test
     fun `should reject an over limit STS PATCH without changing the stored period`() {
       val startDate = today()

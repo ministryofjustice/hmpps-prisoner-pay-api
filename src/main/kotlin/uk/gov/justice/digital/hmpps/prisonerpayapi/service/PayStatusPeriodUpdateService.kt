@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.UpdatePayStatusPe
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.response.PayStatusPeriod
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPeriodRepository
 import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toModel
+import uk.gov.justice.digital.hmpps.prisonerpayapi.service.paystatusperiod.BasePayStatusPeriodRules
 import uk.gov.justice.digital.hmpps.prisonerpayapi.service.paystatusperiod.PayStatusPeriodRulesRegistry
 import java.time.Clock
 import java.time.LocalDate
@@ -21,21 +22,14 @@ class PayStatusPeriodUpdateService(
 ) {
   @Transactional
   fun update(id: UUID, request: UpdatePayStatusPeriodRequest): PayStatusPeriod {
-    require(request.endDate == null || !request.removeEndDate) {
-      "removeEndDate cannot be true when an endDate is also supplied"
-    }
-    require(request.endDate == null || !request.endDate.isBefore(LocalDate.now(clock))) {
-      "The end date must not be in the past"
-    }
+    val today = LocalDate.now(clock)
+    BasePayStatusPeriodRules.validateUpdateRequestFields(request, today)
 
     return repository
       .findById(id)
       .orElseThrow { EntityNotFoundException("Pay Period Status with id '$id' not found") }
       .also { entity ->
-        require(request.endDate == null || !request.endDate.isBefore(entity.startDate)) {
-          "The end date must not be before the start date"
-        }
-        rulesRegistry.rulesFor(entity.type).validateUpdateRequest(entity, request)
+        rulesRegistry.rulesFor(entity.type).validateUpdateRequest(entity, request, today)
         applyEndDateUpdate(entity, request)
       }
       .let { repository.saveAndFlush(it) }
