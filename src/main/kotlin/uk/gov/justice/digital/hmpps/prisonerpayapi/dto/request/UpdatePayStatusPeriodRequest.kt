@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
 
-@Schema(description = "The update pay status period request")
+@Schema(description = "The update pay status period request, only active or future-dated periods can be updated; periods ending today are still active.")
 data class UpdatePayStatusPeriodRequest(
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "uuuu-MM-dd")
   @Schema(description = "The end date", example = "2025-11-14")

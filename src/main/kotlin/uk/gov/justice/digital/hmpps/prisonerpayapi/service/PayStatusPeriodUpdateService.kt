@@ -21,10 +21,11 @@ class PayStatusPeriodUpdateService(
 ) {
   @Transactional
   fun update(id: UUID, request: UpdatePayStatusPeriodRequest): PayStatusPeriod {
+    val today = LocalDate.now(clock)
     require(request.endDate == null || !request.removeEndDate) {
       "removeEndDate cannot be true when an endDate is also supplied"
     }
-    require(request.endDate == null || !request.endDate.isBefore(LocalDate.now(clock))) {
+    require(request.endDate == null || !request.endDate.isBefore(today)) {
       "The end date must not be in the past"
     }
 
@@ -32,6 +33,9 @@ class PayStatusPeriodUpdateService(
       .findById(id)
       .orElseThrow { EntityNotFoundException("Pay Period Status with id '$id' not found") }
       .also { entity ->
+        require(entity.endDate?.isBefore(today) != true) {
+          "Cannot update an expired pay status period"
+        }
         require(request.endDate == null || !request.endDate.isBefore(entity.startDate)) {
           "The end date must not be before the start date"
         }
