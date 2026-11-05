@@ -11,7 +11,7 @@ interface PayStatusPeriodRules {
 
   fun validateCreateRequest(request: CreatePayStatusPeriodRequest, today: LocalDate)
 
-  fun validateUpdateRequest(existing: PayStatusPeriod, request: UpdatePayStatusPeriodRequest)
+  fun validateUpdateRequest(existing: PayStatusPeriod, request: UpdatePayStatusPeriodRequest, today: LocalDate)
 
   fun validateDeleteRequest(existing: PayStatusPeriod, today: LocalDate)
 }
