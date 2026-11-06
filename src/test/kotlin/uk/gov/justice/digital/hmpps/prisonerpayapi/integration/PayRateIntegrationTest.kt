@@ -508,25 +508,26 @@ class PayRateIntegrationTest : IntegrationTestBase() {
   @DisplayName("Delete future pay rates")
   inner class DeleteFuturePayRate {
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = ["22222222-2222-2222-2222-222222222222", "44444444-4444-4444-4444-444444444444"])
     @Sql("classpath:sql/pay-rates/update-pay-rates-future-rates.sql")
-    fun `should delete a future pay rate`() {
-      val id = UUID.fromString("22222222-2222-2222-2222-222222222222")
+    fun `should delete a future pay rate`(futureRateId: UUID) {
       val beforeCount = payRateRepository.count()
 
-      deleteFuturePayRate(id)
+      deleteFuturePayRate(futureRateId)
         .expectStatus().isOk
 
-      assertThat(payRateRepository.findById(id)).isEmpty()
+      assertThat(payRateRepository.findById(futureRateId)).isEmpty()
       assertThat(payRateRepository.count()).isEqualTo(beforeCount - 1)
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = ["11111111-1111-1111-1111-111111111111", "33333333-3333-3333-3333-333333333333"])
     @Sql("classpath:sql/pay-rates/update-pay-rates-future-rates.sql")
-    fun `should return bad request when the pay rate start date is not in future`() {
+    fun `should return bad request when the pay rate start date is not in future`(currentRateId: UUID) {
       val beforeCount = payRateRepository.count()
 
-      with(deleteFuturePayRate(UUID1).badRequest()) {
+      with(deleteFuturePayRate(currentRateId).badRequest()) {
         assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
         assertThat(userMessage).isEqualTo("Validation failure: Cannot delete a pay rate with a start date in the past or today")
         assertThat(developerMessage).isEqualTo("Cannot delete a pay rate with a start date in the past or today")

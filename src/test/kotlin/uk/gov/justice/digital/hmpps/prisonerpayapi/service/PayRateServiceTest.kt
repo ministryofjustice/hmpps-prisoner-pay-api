@@ -108,9 +108,10 @@ class PayRateServiceTest {
     assertThat(result).isEqualTo(newPayRate.toModel())
   }
 
-  @Test
-  fun `should validate using the selected strategy before deleting a pay rate`() {
-    val futurePayRate = payRate(id = UUID1, startDate = now.plusDays(10))
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should validate using the selected strategy before deleting a pay rate`(type: PayStatusType) {
+    val futurePayRate = payRate(id = UUID1, type = type, startDate = now.plusDays(10))
 
     whenever(payRateRepository.findById(UUID1)).thenReturn(Optional.of(futurePayRate))
 
@@ -124,9 +125,10 @@ class PayRateServiceTest {
     }
   }
 
-  @Test
-  fun `should not delete when the selected strategy rejects deletion`() {
-    val existing = payRate(id = UUID1, startDate = now.plusDays(1))
+  @ParameterizedTest
+  @EnumSource(PayStatusType::class)
+  fun `should not delete when the selected strategy rejects deletion`(type: PayStatusType) {
+    val existing = payRate(id = UUID1, type = type, startDate = now.plusDays(1))
     whenever(payRateRepository.findById(UUID1)).thenReturn(Optional.of(existing))
     doThrow(IllegalArgumentException("Deletion rejected by strategy"))
       .whenever(rules).validateDeleteRequest(existing, now)
