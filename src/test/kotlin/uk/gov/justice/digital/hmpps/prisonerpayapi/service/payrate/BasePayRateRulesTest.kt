@@ -56,7 +56,6 @@ class BasePayRateRulesTest {
       .hasMessage("Future pay rate must be cancelled before updating")
   }
 
-  // Refactored for STS delete pay rate. This comment needs to be removed when the STS delete pay rate is implemented.
   @ParameterizedTest
   @EnumSource(PayStatusType::class)
   fun `should allow deleting a future rate`(type: PayStatusType) {
@@ -64,7 +63,6 @@ class BasePayRateRulesTest {
     assertThatCode { rules.validateDeleteRequest(payRate(type = type, startDate = today.plusDays(1)), today) }.doesNotThrowAnyException()
   }
 
-  // Refactored for STS delete pay rate. This comment needs to be removed when the STS delete pay rate is implemented.
   @ParameterizedTest
   @EnumSource(PayStatusType::class)
   fun `should throw an exception when deleting a rate with a start date of today`(type: PayStatusType) {
@@ -74,7 +72,6 @@ class BasePayRateRulesTest {
       .hasMessage("Cannot delete a pay rate with a start date in the past or today")
   }
 
-  // Refactored for STS delete pay rate. This comment needs to be removed when the STS delete pay rate is implemented.
   @ParameterizedTest
   @EnumSource(PayStatusType::class)
   fun `should throw an exception when deleting a rate with a start date in the past`(type: PayStatusType) {
