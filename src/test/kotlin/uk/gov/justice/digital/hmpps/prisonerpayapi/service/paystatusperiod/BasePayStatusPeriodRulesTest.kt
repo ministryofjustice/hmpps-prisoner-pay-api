@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerpayapi.service.paystatusperiod
 
 import org.assertj.core.api.Assertions.assertThatCode
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.Named
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -25,11 +26,15 @@ class BasePayStatusPeriodRulesTest {
     }
 
     @JvmStatic
-    fun ltsRules(): List<PayStatusPeriodRules> = listOf(LongTermSickPayStatusPeriodRules())
+    fun rulesWithEndDateOptions() = rules().flatMap { rules ->
+      listOf(false, true).map { Arguments.of(Named.of(rules.payType().name, rules), it) }
+    }
 
     @JvmStatic
-    fun ltsRulesWithPastOrCurrentStartDates() = ltsRules().flatMap { rules ->
-      listOf(-1L, 0L).map { Arguments.of(rules, it) }
+    fun rulesWithPastOrCurrentStartDates() = rules().flatMap { rules ->
+      listOf(-1L, 0L).flatMap { startOffset ->
+        listOf(false, true).map { Arguments.of(Named.of(rules.payType().name, rules), startOffset, it) }
+      }
     }
   }
 
@@ -143,20 +148,32 @@ class BasePayStatusPeriodRulesTest {
       .doesNotThrowAnyException()
   }
 
-  @ParameterizedTest
-  @MethodSource("ltsRulesWithPastOrCurrentStartDates")
-  fun `should throw an exception when deleting a past or current period`(rules: PayStatusPeriodRules, daysFromToday: Long) {
-    val existing = payStatusPeriod(type = rules.payType(), startDate = today.plusDays(daysFromToday), endDate = today.plusMonths(1))
+  @ParameterizedTest(name = "{0}, start offset={1}, open ended={2}")
+  @MethodSource("rulesWithPastOrCurrentStartDates")
+  fun `should throw an exception when deleting a past or current period`(
+    rules: PayStatusPeriodRules,
+    daysFromToday: Long,
+    openEnded: Boolean,
+  ) {
+    val existing = payStatusPeriod(
+      type = rules.payType(),
+      startDate = today.plusDays(daysFromToday),
+      endDate = if (openEnded) null else today.plusDays(10),
+    )
 
     assertThatThrownBy { rules.validateDeleteRequest(existing, today) }
       .isInstanceOf(IllegalArgumentException::class.java)
       .hasMessage("Cannot delete a pay status period with a start date in the past or today")
   }
 
-  @ParameterizedTest
-  @MethodSource("ltsRules")
-  fun `should allow deleting a future period`(rules: PayStatusPeriodRules) {
-    val existing = payStatusPeriod(type = rules.payType(), startDate = today.plusDays(1), endDate = today.plusMonths(1))
+  @ParameterizedTest(name = "{0}, open ended={1}")
+  @MethodSource("rulesWithEndDateOptions")
+  fun `should allow deleting a future period`(rules: PayStatusPeriodRules, openEnded: Boolean) {
+    val existing = payStatusPeriod(
+      type = rules.payType(),
+      startDate = today.plusDays(1),
+      endDate = if (openEnded) null else today.plusDays(10),
+    )
 
     assertThatCode { rules.validateDeleteRequest(existing, today) }.doesNotThrowAnyException()
   }

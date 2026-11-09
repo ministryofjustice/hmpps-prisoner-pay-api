@@ -8,7 +8,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.ValueSource
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.createPayStatusPeriodRequest
-import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.payStatusPeriod
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import java.time.LocalDate
 
@@ -47,31 +46,5 @@ class ShortTermSickPayStatusPeriodRulesTest {
     assertThatThrownBy { rules.validateCreateRequest(request, today) }
       .isInstanceOf(IllegalArgumentException::class.java)
       .hasMessage("The pay status period must not exceed 28 days")
-  }
-
-  @ParameterizedTest
-  @CsvSource("-1, false", "-1, true", "0, false", "0, true")
-  fun `should reject deleting past or current STS periods`(startOffset: Long, openEnded: Boolean) {
-    val existing = payStatusPeriod(
-      type = PayStatusType.SHORT_TERM_SICK,
-      startDate = today.plusDays(startOffset),
-      endDate = if (openEnded) null else today.plusDays(10),
-    )
-
-    assertThatThrownBy { rules.validateDeleteRequest(existing, today) }
-      .isInstanceOf(IllegalArgumentException::class.java)
-      .hasMessage("Cannot delete a pay status period with a start date in the past or today")
-  }
-
-  @ParameterizedTest
-  @ValueSource(booleans = [false, true])
-  fun `should allow deleting a future STS period`(openEnded: Boolean) {
-    val existing = payStatusPeriod(
-      type = PayStatusType.SHORT_TERM_SICK,
-      startDate = today.plusDays(1),
-      endDate = if (openEnded) null else today.plusDays(10),
-    )
-
-    assertThatCode { rules.validateDeleteRequest(existing, today) }.doesNotThrowAnyException()
   }
 }
