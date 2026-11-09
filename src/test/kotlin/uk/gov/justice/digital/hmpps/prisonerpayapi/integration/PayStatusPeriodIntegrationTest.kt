@@ -643,6 +643,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
       )
       val id = requireNotNull(period.id)
       val original = getPayStatusPeriod(id).success<PayStatusPeriod>()
+      val originalStoredPeriod = payStatusPeriodRepository.findById(id).orElseThrow()
 
       with(deleteFuturePayStatusPeriod(id).badRequest()) {
         assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
@@ -652,7 +653,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
 
       assertThat(getPayStatusPeriod(id).success<PayStatusPeriod>()).isEqualTo(original)
       assertThat(payStatusPeriodRepository.findById(id).orElseThrow())
-        .usingRecursiveComparison().isEqualTo(period)
+        .usingRecursiveComparison().isEqualTo(originalStoredPeriod)
     }
   }
 
