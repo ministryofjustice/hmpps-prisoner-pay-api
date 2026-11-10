@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.CreatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.UpdatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.response.PayStatusPeriod
+import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import uk.gov.justice.digital.hmpps.prisonerpayapi.service.PayStatusPeriodService
 import uk.gov.justice.hmpps.kotlin.common.ErrorResponse
 import java.time.LocalDate
@@ -124,10 +125,13 @@ class PayStatusPeriodController(
     @RequestParam(value = "prisonCode")
     @Parameter(description = "a prison code", example = "PVI")
     prisonCode: String? = null,
+    @RequestParam(value = "type", required = false)
+    @Parameter(description = "The type of pay status period", example = "LONG_TERM_SICK")
+    type: PayStatusType? = null,
     @RequestParam(value = "activeOnly", required = false, defaultValue = "true")
     @Parameter(description = "Whether to return results which are currently active, i.e. the end date is null or not before today", example = "true")
     activeOnly: Boolean = true,
-  ) = payStatusPeriodService.search(latestStartDate, activeOnly, prisonCode)
+  ) = payStatusPeriodService.search(latestStartDate, activeOnly, prisonCode, type)
 
   @PatchMapping(value = ["/{id}"])
   @PreAuthorize("hasRole('ROLE_PRISONER_PAY__PRISONER_PAY_UI')")

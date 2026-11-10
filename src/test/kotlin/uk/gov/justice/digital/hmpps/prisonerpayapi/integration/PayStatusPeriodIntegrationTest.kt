@@ -287,6 +287,13 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
       endDate = today().plusDays(10),
     )
 
+    val request7 = createPayStatusPeriodRequest(
+      prisonerNumber = "G7777GG",
+      type = PayStatusType.SHORT_TERM_SICK,
+      startDate = today(),
+      endDate = today().plusDays(5),
+    )
+
     @BeforeEach
     fun setUp() {
       seedPayStatusPeriod(request1)
@@ -358,6 +365,19 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
         tuple(request4.prisonerNumber, request4.startDate, request4.endDate),
         tuple(request1.prisonerNumber, request1.startDate, request1.endDate),
         tuple(request6.prisonerNumber, request6.startDate, request6.endDate),
+      )
+    }
+
+    @Test
+    fun `should return only short term sick pay status periods when type is SHORT_TERM_SICK`() {
+      seedPayStatusPeriod(request7)
+
+      val response = searchPayStatusPeriods(today(), type = PayStatusType.SHORT_TERM_SICK).successList<PayStatusPeriod>()
+
+      assertThat(response).hasSize(1)
+      assertThat(response.single().type).isEqualTo(PayStatusType.SHORT_TERM_SICK)
+      assertThat(response).extracting("prisonCode", "prisonerNumber", "startDate", "endDate").containsExactly(
+        tuple(request7.prisonCode, request7.prisonerNumber, request7.startDate, request7.endDate),
       )
     }
 
@@ -647,6 +667,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
     latestStartDate: LocalDate,
     activeOnly: Boolean = true,
     prisonCode: String? = null,
+    type: PayStatusType? = null,
     username: String = USERNAME,
     roles: List<String> = listOf("ROLE_PRISONER_PAY__PRISONER_PAY_ORCHESTRATOR_API"),
     includeBearerAuth: Boolean = true,
@@ -658,6 +679,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
         .queryParam("latestStartDate", latestStartDate)
         .queryParam("activeOnly", activeOnly)
         .queryParamIfPresent("prisonCode", ofNullable(prisonCode))
+        .queryParamIfPresent("type", ofNullable(type))
         .build()
     }
     .accept(MediaType.APPLICATION_JSON)

@@ -14,9 +14,10 @@ Authorization: Bearer {{$auth.token("orchestrator-auth-token")}}
 
 // @no-log
 GET {{ baseUrl }}/pay-status-periods?
-    latestStartDate=2025-12-02&
+    latestStartDate=2026-11-03&
     activeOnly=false&
-    prisonCode=RSI
+    prisonCode=RSI&
+    type=LONG_TERM_SICK
 Authorization: Bearer {{$auth.token("orchestrator-auth-token")}}
 
 ### Create a new pay status period
