@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.ValueSource
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -22,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.today
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.updatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPeriodRepository
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -137,22 +140,18 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
       assertThat(response.type).isEqualTo(PayStatusType.LONG_TERM_SICK)
       assertThat(response.endDate).isEqualTo(request.endDate)
     }
-// Commented out as this is part of another ticket.
-//    @Test
-//    fun `can search and delete a future STS period`() {
-//      val request = createPayStatusPeriodRequest(
-//        type = PayStatusType.SHORT_TERM_SICK,
-//        startDate = today().plusDays(1),
-//        endDate = today().plusDays(28),
-//      )
-//      val response = createPayStatusPeriod(request).success<PayStatusPeriod>()
-//
-//      assertThat(searchPayStatusPeriods(request.startDate).successList<PayStatusPeriod>()).containsExactly(response)
-//
-//      deleteFuturePayStatusPeriod(response.id).expectStatus().isNoContent
-//
-//      assertThat(payStatusPeriodRepository.findById(response.id)).isEmpty()
-//    }
+
+    @Test
+    fun `can search for a future STS period`() {
+      val request = createPayStatusPeriodRequest(
+        type = PayStatusType.SHORT_TERM_SICK,
+        startDate = today().plusDays(1),
+        endDate = today().plusDays(28),
+      )
+      val response = createPayStatusPeriod(request).success<PayStatusPeriod>()
+
+      assertThat(searchPayStatusPeriods(request.startDate).successList<PayStatusPeriod>()).containsExactly(response)
+    }
 
     @Test
     fun `should return bad request when the start date is after end date`() {
@@ -602,6 +601,59 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
     @Test
     fun `returns forbidden when role is incorrect`() {
       deleteFuturePayStatusPeriod(UUID.randomUUID(), roles = listOf("ROLE_NO_PERMISSIONS")).fail(HttpStatus.FORBIDDEN)
+    }
+  }
+
+  @Nested
+  @DisplayName("Delete a future short term sick pay status period")
+  inner class DeleteShortTermSickPayStatusPeriod {
+    private val fixedToday = LocalDate.of(2026, 1, 15)
+
+    @BeforeEach
+    fun fixClock() {
+      whenever(clock.instant()).thenReturn(Instant.parse("2026-01-15T12:00:00Z"))
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `should delete an STS period starting tomorrow`(openEnded: Boolean) {
+      val period = createPayStatusPeriod(
+        createPayStatusPeriodRequest(
+          type = PayStatusType.SHORT_TERM_SICK,
+          startDate = fixedToday.plusDays(1),
+          endDate = if (openEnded) null else fixedToday.plusDays(10),
+        ),
+      ).success<PayStatusPeriod>()
+
+      deleteFuturePayStatusPeriod(period.id).expectStatus().isNoContent
+
+      getPayStatusPeriod(period.id).fail(HttpStatus.NOT_FOUND)
+      assertThat(payStatusPeriodRepository.findById(period.id)).isEmpty()
+    }
+
+    @ParameterizedTest
+    @CsvSource("-1, false", "-1, true", "0, false", "0, true")
+    fun `should reject deleting STS starting yesterday or today without changing the stored period`(startOffset: Long, openEnded: Boolean) {
+      val period = seedPayStatusPeriod(
+        createPayStatusPeriodRequest(
+          type = PayStatusType.SHORT_TERM_SICK,
+          startDate = fixedToday.plusDays(startOffset),
+          endDate = if (openEnded) null else fixedToday.plusDays(10),
+        ),
+      )
+      val id = requireNotNull(period.id)
+      val original = getPayStatusPeriod(id).success<PayStatusPeriod>()
+      val originalStoredPeriod = payStatusPeriodRepository.findById(id).orElseThrow()
+
+      with(deleteFuturePayStatusPeriod(id).badRequest()) {
+        assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+        assertThat(userMessage).isEqualTo("Validation failure: Cannot delete a pay status period with a start date in the past or today")
+        assertThat(developerMessage).isEqualTo("Cannot delete a pay status period with a start date in the past or today")
+      }
+
+      assertThat(getPayStatusPeriod(id).success<PayStatusPeriod>()).isEqualTo(original)
+      assertThat(payStatusPeriodRepository.findById(id).orElseThrow())
+        .usingRecursiveComparison().isEqualTo(originalStoredPeriod)
     }
   }
 
