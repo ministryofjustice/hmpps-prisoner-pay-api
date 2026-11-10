@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -27,6 +28,7 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPerio
 import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toModel
 import uk.gov.justice.digital.hmpps.prisonerpayapi.service.paystatusperiod.PayStatusPeriodRules
 import uk.gov.justice.digital.hmpps.prisonerpayapi.service.paystatusperiod.PayStatusPeriodRulesRegistry
+import uk.gov.justice.digital.hmpps.prisonerpayapi.service.paystatusperiod.rules.ShortTermSickPayStatusPeriodRules
 import uk.gov.justice.hmpps.kotlin.auth.HmppsAuthenticationHolder
 import java.time.Clock
 import java.time.Instant
@@ -246,5 +248,37 @@ class PayStatusPeriodServiceTest {
     assertThatThrownBy { payStatusPeriodService.delete(UUID1) }
       .isInstanceOf(EntityNotFoundException::class.java)
       .hasMessage("Pay Status Period $UUID1 not found")
+  }
+
+  @Test
+  fun `should delete an STS period starting tomorrow using the STS rules`() {
+    val existing = payStatusPeriod(type = PayStatusType.SHORT_TERM_SICK, startDate = today.plusDays(1), endDate = null)
+    whenever(repository.findById(UUID1)).thenReturn(Optional.of(existing))
+    whenever(rulesRegistry.rulesFor(PayStatusType.SHORT_TERM_SICK)).thenReturn(ShortTermSickPayStatusPeriodRules())
+
+    payStatusPeriodService.delete(UUID1)
+
+    inOrder(repository, rulesRegistry) {
+      verify(repository).findById(UUID1)
+      verify(rulesRegistry).rulesFor(PayStatusType.SHORT_TERM_SICK)
+      verify(repository).delete(existing)
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(longs = [-1, 0])
+  fun `should not delete a past or current STS period using the STS rules`(startOffset: Long) {
+    val existing = payStatusPeriod(type = PayStatusType.SHORT_TERM_SICK, startDate = today.plusDays(startOffset), endDate = null)
+    whenever(repository.findById(UUID1)).thenReturn(Optional.of(existing))
+    whenever(rulesRegistry.rulesFor(PayStatusType.SHORT_TERM_SICK)).thenReturn(ShortTermSickPayStatusPeriodRules())
+
+    assertThatThrownBy { payStatusPeriodService.delete(UUID1) }
+      .isInstanceOf(IllegalArgumentException::class.java)
+      .hasMessage("Cannot delete a pay status period with a start date in the past or today")
+
+    verify(rulesRegistry).rulesFor(PayStatusType.SHORT_TERM_SICK)
+    verify(repository, never()).delete(any())
+    assertThat(existing.startDate).isEqualTo(today.plusDays(startOffset))
+    assertThat(existing.endDate).isNull()
   }
 }
