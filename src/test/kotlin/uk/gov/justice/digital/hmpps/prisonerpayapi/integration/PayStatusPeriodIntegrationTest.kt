@@ -381,6 +381,15 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
     }
 
     @Test
+    fun `should return bad request when the type is not a valid pay status type`() {
+      with(searchPayStatusPeriods(today(), type = "INVALID").badRequest()) {
+        assertThat(status).isEqualTo(HttpStatus.BAD_REQUEST.value())
+        assertThat(userMessage).isEqualTo("Validation failure: Invalid value 'INVALID' for parameter 'type'")
+        assertThat(developerMessage).contains("INVALID")
+      }
+    }
+
+    @Test
     fun `returns unauthorized when no bearer token`() {
       searchPayStatusPeriods(today(), includeBearerAuth = false).fail(HttpStatus.UNAUTHORIZED)
     }
@@ -719,7 +728,7 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
     latestStartDate: LocalDate,
     activeOnly: Boolean = true,
     prisonCode: String? = null,
-    type: PayStatusType? = null,
+    type: Any? = null,
     username: String = USERNAME,
     roles: List<String> = listOf("ROLE_PRISONER_PAY__PRISONER_PAY_ORCHESTRATOR_API"),
     includeBearerAuth: Boolean = true,
