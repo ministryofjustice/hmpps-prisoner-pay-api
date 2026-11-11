@@ -657,6 +657,40 @@ class PayStatusPeriodIntegrationTest : IntegrationTestBase() {
     }
   }
 
+  @Nested
+  @DisplayName("Short term sick pay status period expiry")
+  inner class ShortTermSickPayStatusPeriodExpiry {
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun `STS should expire the day after its inclusive end date without deleting its history`(sameDayPeriod: Boolean) {
+      val endDate = LocalDate.of(2026, 1, 15)
+      val startDate = if (sameDayPeriod) endDate else endDate.minusDays(1)
+      whenever(clock.instant()).thenReturn(startDate.atStartOfDay(ZoneId.of("Europe/London")).toInstant())
+      val period = createPayStatusPeriod(
+        createPayStatusPeriodRequest(
+          type = PayStatusType.SHORT_TERM_SICK,
+          startDate = startDate,
+          endDate = endDate,
+        ),
+      ).success<PayStatusPeriod>()
+      val original = getPayStatusPeriod(period.id).success<PayStatusPeriod>()
+
+      whenever(clock.instant()).thenReturn(endDate.atStartOfDay(ZoneId.of("Europe/London")).toInstant())
+
+      assertThat(searchPayStatusPeriods(endDate).successList<PayStatusPeriod>()).containsExactly(original)
+      assertThat(payStatusPeriodRepository.findByPrisonCodeAndDate(period.prisonCode, endDate).map { it.id })
+        .containsExactly(period.id)
+
+      val dayAfterEndDate = endDate.plusDays(1)
+      whenever(clock.instant()).thenReturn(dayAfterEndDate.atStartOfDay(ZoneId.of("Europe/London")).toInstant())
+
+      assertThat(searchPayStatusPeriods(dayAfterEndDate).successList<PayStatusPeriod>()).isEmpty()
+      assertThat(payStatusPeriodRepository.findByPrisonCodeAndDate(period.prisonCode, dayAfterEndDate)).isEmpty()
+      assertThat(searchPayStatusPeriods(dayAfterEndDate, activeOnly = false).successList<PayStatusPeriod>()).containsExactly(original)
+      assertThat(getPayStatusPeriod(period.id).success<PayStatusPeriod>()).isEqualTo(original)
+    }
+  }
+
   private fun seedPayStatusPeriod(request: CreatePayStatusPeriodRequest) = payStatusPeriodRepository.save(
     payStatusPeriod(
       id = null,

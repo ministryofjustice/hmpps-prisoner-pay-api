@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.ValueSource
 import uk.gov.justice.digital.hmpps.prisonerpayapi.common.TimeSlot
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.payStatusPeriod
 import java.time.LocalDate
@@ -135,5 +136,19 @@ class PayStatusPeriodTest {
     assertThat(entity.isActiveOn(LocalDate.of(2026, 1, 2))).isTrue()
     assertThat(entity.isActiveOn(LocalDate.of(2026, 1, 3))).isFalse()
     assertThat(entity.isActiveOn(LocalDate.of(2026, 1, 4))).isFalse()
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = [false, true])
+  fun `STS should be active on its end date and inactive the following weekday`(sameDayPeriod: Boolean) {
+    val endDate = LocalDate.of(2026, 1, 15)
+    val entity = payStatusPeriod(
+      type = PayStatusType.SHORT_TERM_SICK,
+      startDate = if (sameDayPeriod) endDate else endDate.minusDays(1),
+      endDate = endDate,
+    )
+
+    assertThat(entity.isActiveOn(endDate)).isTrue()
+    assertThat(entity.isActiveOn(endDate.plusDays(1))).isFalse()
   }
 }
