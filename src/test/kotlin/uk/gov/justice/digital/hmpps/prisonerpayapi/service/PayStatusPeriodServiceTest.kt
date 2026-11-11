@@ -10,6 +10,7 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.inOrder
@@ -156,11 +157,31 @@ class PayStatusPeriodServiceTest {
       ),
     )
 
-    whenever(repository.search(any(), any(), any(), any())).thenReturn(expectedEntities)
+    whenever(repository.search(any(), any(), any(), any(), anyOrNull())).thenReturn(expectedEntities)
 
     val results = payStatusPeriodService.search(LocalDate.of(2025, 7, 23), true, "RSI")
 
-    verify(repository).search(LocalDate.of(2025, 7, 23), true, "RSI", LocalDate.of(2025, 7, 23))
+    verify(repository).search(LocalDate.of(2025, 7, 23), true, "RSI", LocalDate.of(2025, 7, 23), null)
+
+    assertThat(results).usingRecursiveComparison().isEqualTo(expectedEntities.map { it.toModel() })
+  }
+
+  @Test
+  fun `should retrieve pay status periods of a specific type`() {
+    val expectedEntities = listOf(
+      payStatusPeriod(
+        type = PayStatusType.SHORT_TERM_SICK,
+        startDate = LocalDate.of(2025, 7, 23),
+        endDate = LocalDate.of(2025, 8, 1),
+        createdBy = "BLOGGSJ",
+      ),
+    )
+
+    whenever(repository.search(any(), any(), any(), any(), any())).thenReturn(expectedEntities)
+
+    val results = payStatusPeriodService.search(LocalDate.of(2025, 7, 23), true, "RSI", PayStatusType.SHORT_TERM_SICK)
+
+    verify(repository).search(LocalDate.of(2025, 7, 23), true, "RSI", LocalDate.of(2025, 7, 23), PayStatusType.SHORT_TERM_SICK)
 
     assertThat(results).usingRecursiveComparison().isEqualTo(expectedEntities.map { it.toModel() })
   }

@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusPeriod
+import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import java.time.LocalDate
 import java.util.*
 
@@ -14,11 +15,12 @@ interface PayStatusPeriodRepository : JpaRepository<PayStatusPeriod, UUID> {
     select psp from PayStatusPeriod psp 
     where psp.startDate <= :latestStartDate
     and (:prisonCode is null or psp.prisonCode = :prisonCode)
+    and (:type is null or psp.type = :type)
     and (:activeOnly = false or psp.endDate is null or psp.endDate >= :today)
     order by psp.startDate
   """,
   )
-  fun search(latestStartDate: LocalDate, activeOnly: Boolean, prisonCode: String? = null, today: LocalDate): List<PayStatusPeriod>
+  fun search(latestStartDate: LocalDate, activeOnly: Boolean, prisonCode: String? = null, today: LocalDate, type: PayStatusType? = null): List<PayStatusPeriod>
 
   @Query(
     """

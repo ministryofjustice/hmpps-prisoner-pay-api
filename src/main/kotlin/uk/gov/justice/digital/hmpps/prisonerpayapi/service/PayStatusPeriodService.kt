@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.prisonerpayapi.SYSTEM_USERNAME
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.CreatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.request.UpdatePayStatusPeriodRequest
 import uk.gov.justice.digital.hmpps.prisonerpayapi.dto.response.PayStatusPeriod
+import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.entity.PayStatusType
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.PayStatusPeriodRepository
 import uk.gov.justice.digital.hmpps.prisonerpayapi.jpa.repository.findOrThrowNotFound
 import uk.gov.justice.digital.hmpps.prisonerpayapi.mapping.toEntity
@@ -44,8 +45,8 @@ class PayStatusPeriodService(
   }
 
   @Transactional(readOnly = true)
-  fun search(latestStartDate: LocalDate, activeOnly: Boolean, prisonCode: String? = null) = repository
-    .search(latestStartDate, activeOnly, prisonCode, LocalDate.now(clock))
+  fun search(latestStartDate: LocalDate, activeOnly: Boolean, prisonCode: String? = null, type: PayStatusType? = null) = repository
+    .search(latestStartDate, activeOnly, prisonCode, LocalDate.now(clock), type)
     .map { it.toModel() }
 
   fun update(id: UUID, request: UpdatePayStatusPeriodRequest): PayStatusPeriod = updateService.update(id, request)
