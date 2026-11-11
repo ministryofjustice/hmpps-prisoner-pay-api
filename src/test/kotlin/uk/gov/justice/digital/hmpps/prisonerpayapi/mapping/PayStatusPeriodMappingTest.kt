@@ -58,7 +58,7 @@ class PayStatusPeriodMappingTest {
       assertThat(id).isNull()
       assertThat(prisonCode).isEqualTo(dto.prisonCode)
       assertThat(prisonerNumber).isEqualTo(dto.prisonerNumber)
-      assertThat(type).isEqualTo(dto.type)
+      assertThat(this.type).isEqualTo(dto.type)
       assertThat(startDate).isEqualTo(dto.startDate)
       assertThat(endDate).isEqualTo(dto.endDate)
       assertThat(createdBy).isEqualTo("JBLOGGS")
