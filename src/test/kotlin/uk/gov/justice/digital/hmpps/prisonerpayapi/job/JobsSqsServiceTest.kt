@@ -11,10 +11,12 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
+import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.UUID1
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 import java.time.LocalDateTime
+import java.util.concurrent.CompletableFuture
 
 class JobsSqsServiceTest {
   val queueService: HmppsQueueService = mock()
@@ -40,6 +42,9 @@ class JobsSqsServiceTest {
       .messageBody(mapper.writeValueAsString(message))
       .build()
 
+    whenever(sqsClient.sendMessage(expectedMessage))
+      .thenReturn(CompletableFuture.completedFuture(SendMessageResponse.builder().messageId("id").build()))
+
     service.sendJobEvent(message)
 
     verify(sqsClient).sendMessage(expectedMessage)
@@ -54,5 +59,15 @@ class JobsSqsServiceTest {
     assertThrows<PublishEventException>("Failed to send job event message $message") {
       service.sendJobEvent(message)
     }
+  }
+
+  @Test
+  fun `should throw exception if async send completes exceptionally`() {
+    val message = JobEventMessage(UUID1, LocalDateTime.now(), JobType.MAKE_PAYMENTS, PrisonCodeJobEvent("RSI"))
+
+    whenever(sqsClient.sendMessage(any<SendMessageRequest>()))
+      .thenReturn(CompletableFuture.failedFuture(RuntimeException("SQS rejected")))
+
+    assertThrows<PublishEventException> { service.sendJobEvent(message) }
   }
 }
