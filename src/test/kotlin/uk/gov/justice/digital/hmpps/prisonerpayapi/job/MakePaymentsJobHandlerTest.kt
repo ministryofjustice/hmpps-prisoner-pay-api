@@ -50,7 +50,7 @@ class MakePaymentsJobHandlerTest {
   }
 
   @Test
-  fun `should retry only the events that failed and succeed`() {
+  fun `should retry only the failed event and not throw if the retry succeeds`() {
     val failures = mutableListOf("BCI")
     whenever(jobsSqsService.sendJobEvent(any())).thenAnswer {
       val prison = (it.getArgument<JobEventMessage>(0).messageAttributes as PrisonCodeJobEvent).prisonCode
