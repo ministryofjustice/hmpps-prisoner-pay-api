@@ -2,10 +2,13 @@ package uk.gov.justice.digital.hmpps.prisonerpayapi.job
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import uk.gov.justice.digital.hmpps.prisonerpayapi.helper.UUID1
 import uk.gov.justice.digital.hmpps.prisonerpayapi.service.payment.PaymentService
 import java.time.Clock
@@ -44,6 +47,31 @@ class MakePaymentsJobHandlerTest {
       assertThat(it.jobStartDateTime).isEqualTo(expectedStartTime)
       assertThat(it.eventType).isEqualTo(JobType.MAKE_PAYMENTS)
     }
+  }
+
+  @Test
+  fun `should retry only the failed event and not throw if the retry succeeds`() {
+    val failures = mutableListOf("BCI")
+    whenever(jobsSqsService.sendJobEvent(any())).thenAnswer {
+      val prison = (it.getArgument<JobEventMessage>(0).messageAttributes as PrisonCodeJobEvent).prisonCode
+      if (failures.remove(prison)) throw PublishEventException("fail")
+    }
+
+    handler.execute()
+
+    verify(jobsSqsService, times(3)).sendJobEvent(captor.capture())
+    assertThat(captor.allValues.map { it.messageAttributes }).containsExactly(PrisonCodeJobEvent("BCI"), PrisonCodeJobEvent("RSI"), PrisonCodeJobEvent("BCI"))
+  }
+
+  @Test
+  fun `should throw if events still fail after retries`() {
+    whenever(jobsSqsService.sendJobEvent(any())).thenAnswer {
+      if ((it.getArgument<JobEventMessage>(0).messageAttributes as PrisonCodeJobEvent).prisonCode == "RSI") throw PublishEventException("fail")
+    }
+
+    assertThrows<PublishEventException> { handler.execute() }
+
+    verify(jobsSqsService, times(2 + 2)).sendJobEvent(any())
   }
 
   @Test
