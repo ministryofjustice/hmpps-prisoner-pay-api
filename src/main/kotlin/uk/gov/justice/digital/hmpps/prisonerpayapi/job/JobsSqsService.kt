@@ -29,7 +29,9 @@ class JobsSqsService(
     log.info("Sending job event message $message")
 
     try {
-      sqsClient.sendMessage(buildMessageRequest(message))
+      // Wait for SQS to confirm acceptance; sendMessage is asynchronous
+      val response = sqsClient.sendMessage(buildMessageRequest(message)).join()
+      log.info("SQS accepted job event message with id ${response.messageId()}")
     } catch (e: Throwable) {
       val errorMessage = "Failed to send job event message $message"
       log.error(errorMessage, e)
