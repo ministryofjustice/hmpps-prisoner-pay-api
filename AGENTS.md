@@ -111,8 +111,6 @@ Proposed replacement of the flat `payment` table with a pay record and pay detai
 ### Changes needed in hmpps-activities-management-api
 - Store the prisoner's incentive level code on the attendance row alongside `payAmount`, in the 04:00 job and the mid-day creation path (`createAnyAttendancesForToday`). Do not default a missing level to a zero rate silently; leave it null and alert.
 - The proposed rule treats same-day incentive changes as effective for pay from the following day. Same-day creation currently uses the then-current level, so a consistent approach needs design and confirmation.
-- Pay should consume the Activities amount rather than recalculate using the current incentive level. Verify the amount's lifecycle and API contract; backfills currently use today's level.
-- Data flow stays one-way (activities to prisoner pay). Pay does not write back.
 
 ### Open questions
 - Business Questions Q5 (delay pay), Q6 (condensing transactions across sessions), Q7 (weekends and bank holidays), Q8 (transfers), Q10 (status added and removed same day). If Q6 is answered "condense", the session fields move off the pay record.
