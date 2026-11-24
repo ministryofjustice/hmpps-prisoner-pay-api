@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "11.1.0"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "11.1.2"
   kotlin("plugin.spring") version "2.4.21"
   kotlin("plugin.jpa") version "2.4.21"
 }
@@ -19,7 +19,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-data-jpa")
   implementation("org.springframework.boot:spring-boot-starter-flyway")
 
-  runtimeOnly("org.postgresql:postgresql:42.7.14") // temp fix, will need unpinning - addresses CVE-2026-42198"
+  runtimeOnly("org.postgresql:postgresql:42.7.15") // temp fix, will need unpinning - addresses CVE-2026-42198"
   runtimeOnly("org.flywaydb:flyway-database-postgresql")
 
   testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:3.1.0")

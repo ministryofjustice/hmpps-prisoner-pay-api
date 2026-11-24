@@ -11,6 +11,12 @@
       "groupSlug": "all-gradle-minor-patch"
     },
     {
+      "description": "Hold swagger-ui at the version springdoc 3.2.0 supports",
+      "matchManagers": ["gradle"],
+      "matchPackageNames": ["org.webjars:swagger-ui"],
+      "enabled": false
+    },
+    {
       "matchManagers": ["github-actions"],
       "matchFileNames": [
         "**/.github/workflows/**/*.ya?ml",
